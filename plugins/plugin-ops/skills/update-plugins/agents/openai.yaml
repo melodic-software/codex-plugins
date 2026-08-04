@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Plugins"
+  short_description: "Refresh marketplaces and reinstall plugins"
+  default_prompt: "Use $update-plugins to refresh my Codex marketplaces and plugins."

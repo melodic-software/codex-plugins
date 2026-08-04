@@ -1,0 +1,20 @@
+{
+  "name": "melodic-software-codex",
+  "interface": {
+    "displayName": "Melodic Software Codex Plugins"
+  },
+  "plugins": [
+    {
+      "name": "plugin-ops",
+      "source": {
+        "source": "local",
+        "path": "./plugins/plugin-ops"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

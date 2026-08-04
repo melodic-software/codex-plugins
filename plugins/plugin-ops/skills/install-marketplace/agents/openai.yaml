@@ -1,0 +1,4 @@
+interface:
+  display_name: "Install Marketplace"
+  short_description: "Add and install Codex marketplaces safely"
+  default_prompt: "Use $install-marketplace to add a Codex marketplace and install a plugin."
