@@ -1,0 +1,14 @@
+{
+  "name": "@melodic-software/codex-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Validation tooling for the Melodic Software Codex plugin marketplace.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.test.mjs",
+    "validate": "node plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.mjs ."
+  }
+}

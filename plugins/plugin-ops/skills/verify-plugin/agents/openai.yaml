@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Plugin"
+  short_description: "Validate Codex plugins and marketplace catalogs"
+  default_prompt: "Use $verify-plugin to validate this Codex plugin or marketplace."
