@@ -19,6 +19,7 @@ const requiredOfficialPointers = [
   "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
   "https://learn.chatgpt.com/docs/hooks",
   "https://learn.chatgpt.com/docs/plugins",
+  "https://learn.chatgpt.com/docs/automations",
   "https://learn.chatgpt.com/docs/import",
   "https://learn.chatgpt.com/docs/agent-approvals-security",
   "https://learn.chatgpt.com/docs/config-file/config-advanced",

@@ -24,6 +24,7 @@ Read the smallest complete set that covers the affected surface.
 | Lifecycle extension and trust | [Hooks](https://learn.chatgpt.com/docs/hooks) |
 | Installation and supported plugin surfaces | [Use plugins](https://learn.chatgpt.com/docs/plugins) |
 | Installed CLI inventory and `/skills` or `/plugins` behavior | [Codex CLI command reference](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) |
+| Scheduled task behavior and management | [Scheduled tasks](https://learn.chatgpt.com/docs/automations) |
 | Native import behavior from another agent | [Import from another agent](https://learn.chatgpt.com/docs/import) |
 | Sandbox, approvals, and action boundaries | [Agent approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security) |
 | Native project instruction and configuration discovery | [Advanced configuration](https://learn.chatgpt.com/docs/config-file/config-advanced) |

@@ -12,6 +12,7 @@ Add the marketplace and install its plugins:
 codex plugin marketplace add melodic-software/codex-plugins --ref main
 codex plugin add plugin-ops@melodic-software-codex
 codex plugin add codex-operations@melodic-software-codex
+codex plugin add scheduled-tasks@melodic-software-codex
 ```
 
 Start a new Codex task after installation so the new skills are discovered.
@@ -25,7 +26,9 @@ explicit `$skill` or `$plugin:skill` prompt examples.
 
 ## Plugins
 
-`plugin-ops` dogfoods the marketplace by providing skills to:
+### `plugin-ops`
+
+Dogfoods the marketplace by providing skills to:
 
 - add and install marketplace sources with the native Codex CLI;
 - refresh marketplaces and reinstall changed plugins;
@@ -37,6 +40,18 @@ explicit `$skill` or `$plugin:skill` prompt examples.
 - coordinate multi-task, multi-agent, and long-running Codex work; and
 - find evidence-backed opportunities for reusable skills from bounded local
   session data without modifying skills automatically.
+
+### `scheduled-tasks`
+
+Provides `manage-scheduled-tasks`, a focused skill that:
+
+- refreshes the official Scheduled documentation and inspects the active native
+  tools on every invocation;
+- explains and recommends scheduled tasks inside a chat or standalone scheduled
+  tasks;
+- lists, inspects, creates, updates, pauses, resumes, and deletes tasks when the
+  active native capability supports those operations; and
+- never introduces its own scheduler or edits native task state directly.
 
 ## Layout
 
