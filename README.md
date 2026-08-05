@@ -6,16 +6,17 @@ hooks, and MCP configuration.
 
 ## Install
 
-Add the marketplace and install the initial `plugin-ops` plugin:
+Add the marketplace and install its plugins:
 
 ```powershell
 codex plugin marketplace add melodic-software/codex-plugins --ref main
 codex plugin add plugin-ops@melodic-software-codex
+codex plugin add codex-operations@melodic-software-codex
 ```
 
 Start a new Codex task after installation so the new skills are discovered.
 
-## Initial plugin
+## Plugins
 
 `plugin-ops` dogfoods the marketplace by providing skills to:
 
@@ -23,6 +24,12 @@ Start a new Codex task after installation so the new skills are discovered.
 - refresh marketplaces and reinstall changed plugins;
 - validate catalogs, manifests, skills, and portable path contracts; and
 - translate Claude Code or Cursor plugins into Codex-native packages.
+
+`codex-operations` provides portable skills to:
+
+- coordinate multi-task, multi-agent, and long-running Codex work; and
+- find evidence-backed opportunities for reusable skills from bounded local
+  session data without modifying skills automatically.
 
 ## Layout
 
