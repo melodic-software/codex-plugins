@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import sys
 from collections import Counter, defaultdict
@@ -73,6 +74,12 @@ def plugin_skills_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def default_sessions_root() -> Path:
+    """Return the native Codex session root, honoring a configured CODEX_HOME."""
+    codex_home = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
+    return codex_home / "sessions"
+
+
 def default_skill_roots() -> list[Path]:
     roots = [plugin_skills_root()]
     native_user_root = Path.home() / ".agents" / "skills"
@@ -104,8 +111,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--sessions-dir",
         type=Path,
-        default=Path.home() / ".codex" / "sessions",
-        help="Codex session JSONL root.",
+        default=default_sessions_root(),
+        help="Codex session JSONL root (defaults to CODEX_HOME/sessions).",
     )
     parser.add_argument(
         "--skills-dir",

@@ -114,3 +114,51 @@ test("collector rejects an invalid lookback", (t) => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /--hours must be greater than zero/);
 });
+
+test("collector defaults sessions to CODEX_HOME", async (t) => {
+  const python = findPython();
+  if (!python) {
+    t.skip("Python 3 is not available");
+    return;
+  }
+
+  const temp = await mkdtemp(path.join(os.tmpdir(), "codex-operations-home-"));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+  const codexHome = path.join(temp, "custom-codex-home");
+  const sessions = path.join(codexHome, "sessions");
+  const skills = path.join(temp, "skills");
+  await mkdir(sessions, { recursive: true });
+  await writeSkill(skills, "example-skill", "Example skill.");
+
+  const sessionFile = path.join(sessions, "session.jsonl");
+  await writeFile(
+    sessionFile,
+    `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      payload: { message: "We repeat this workflow with $example-skill." },
+    })}\n`,
+    "utf8",
+  );
+  const now = new Date();
+  await utimes(sessionFile, now, now);
+
+  const result = spawnSync(
+    python.command,
+    [
+      ...python.prefix,
+      collector,
+      "--hours",
+      "1",
+      "--skills-dir",
+      skills,
+    ],
+    {
+      encoding: "utf8",
+      env: { ...process.env, CODEX_HOME: codexHome },
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Candidate files scanned: 1/);
+  assert.match(result.stdout, /`example-skill` - Example skill\./);
+});
