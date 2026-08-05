@@ -1,37 +1,126 @@
 # Working in this repository
 
-Read `README.md`, `docs/PLUGIN-PHILOSOPHY.md`, and the relevant parts of
-`docs/MIGRATION-PLAYBOOK.md` before changing a plugin.
+This repository is the Codex-only source of truth for its marketplace and
+plugins. These requirements apply to authors, reviewers, migration work, and
+release work.
 
-## Source of truth
+## Mandatory documentation preflight
 
-This repository owns Codex manifests and runtime behavior. Translate portable
-ideas from sibling Claude Code or Cursor marketplaces, but do not import their
-manifests, discover their install paths, or make them runtime dependencies.
+Before taking any action that creates, changes, migrates, reviews, validates,
+installs, or publishes a plugin component:
 
-Before changing plugin layout, installation advice, hooks, MCP wiring, or
-marketplace metadata, fetch the current official OpenAI documentation listed in
-`docs/OFFICIAL-DOCS.md`. Current documentation and the installed Codex CLI take
-precedence over repository prose.
+1. Read `README.md`, `docs/OFFICIAL-DOCS.md`, and all of
+   `docs/PLUGIN-PHILOSOPHY.md`.
+2. For a migration, also read all of `docs/MIGRATION-PLAYBOOK.md`, the source
+   component, its tests, and the source-host documentation relevant to it.
+3. Open the live official pages identified for the affected surface in
+   `docs/OFFICIAL-DOCS.md`. Do not rely on remembered behavior or a copied
+   documentation snapshot.
+4. Inspect the installed `codex ... --help` output when CLI behavior is part of
+   the change.
+5. Record the consulted URLs and verification date in the pull request. Link to
+   upstream material; do not copy its prose or examples into this repository.
 
-## Authoring
+Read only the sections relevant to the action, but do not skip the preflight.
+When live official documentation and verified product behavior disagree, stop
+contract-changing work, record the discrepancy, and prefer the narrower
+behavior until it is resolved. Update `docs/OFFICIAL-DOCS.md` when a pointer
+moves or a new native surface becomes relevant.
 
-- Prefer Codex-native skills and configuration surfaces.
-- Keep plugins useful outside Melodic Software and outside the machine that
-  authored them.
-- Discover repository policy from the active `AGENTS.md` hierarchy and project
-  context. Do not bundle organization-specific policy as a universal default.
-- Use sensible, quiet defaults. Ask only when a choice is material and cannot be
-  inferred safely.
-- Scaffold plugins and skills with the built-in `$plugin-creator` and
-  `$skill-creator` workflows.
-- Keep skill instructions concise; move detailed variants into one-level
-  references.
+## Source precedence
+
+Apply sources in this order:
+
+1. The user's current intent and authorized scope.
+2. The active consumer repository's `AGENTS.md` hierarchy and native project
+   configuration.
+3. Current official OpenAI documentation for the target Codex contract.
+4. Verified behavior of the installed Codex release.
+5. Current official source-host documentation during a migration.
+6. This repository's philosophy, playbooks, tests, and examples.
+7. General engineering references as design guidance, never as a substitute
+   for the current Codex contract.
+
+Source-host manifests and sibling marketplaces are evidence about the source
+capability, not authority for the Codex target.
+
+## Required design behavior
+
+- Start with a user goal and ship one cohesive vertical slice.
+- Keep domain decisions independent from Codex, filesystem, shell, network,
+  connector, and source-host details. Put those details behind small adapters.
+- Prefer native Codex skills, `AGENTS.md`, project or user configuration, hooks,
+  MCP/app connections, approvals, and marketplace fields before inventing a
+  plugin-local mechanism.
+- Discover behavior from the active repository context before applying plugin
+  defaults. The user request and repository policy override a generic default.
+- Keep plugins, skills, hooks, scripts, and agents user-agnostic,
+  organization-agnostic, repository-agnostic, and machine-agnostic.
+- Make optional integrations replaceable and preserve a useful fallback.
+- Favor high cohesion, low coupling, interface segregation, encapsulation, and
+  explicit ports over shared mutable state or sibling-plugin discovery.
+- Use quiet, reversible defaults. Ask only when a material choice cannot be
+  inferred safely from the authorized request and repository context.
+- Do not create automatic cross-repository synchronization. Port ideas and
+  behavior deliberately, with independent releases for each host.
+
+## Repository-context discovery
+
+Before a plugin changes repository content, it must inspect, in order:
+
+1. the current request and explicit invocation inputs;
+2. the active `AGENTS.md` chain from repository root to working directory;
+3. native repository configuration, manifests, CI, documentation, and existing
+   conventions relevant to the task;
+4. available Codex tools, connectors, hooks, and platform capabilities; and
+5. the plugin's documented fallback defaults.
+
+Never treat a publisher's personal conventions, employer policy, absolute
+paths, tool installation, subscription, or credentials as a consumer default.
+
+## Authoring and packaging
+
+- Scaffold or update plugins with `$plugin-creator` and skills with
+  `$skill-creator` when those workflows are available.
+- Keep every skill focused on one recognizable goal. Put essential procedure in
+  `SKILL.md` and detailed variants in directly linked `references/` files.
+- Keep `agents/openai.yaml` aligned with its skill as UI and invocation
+  metadata; do not treat that file as a custom execution agent definition.
+- Package a custom agent only when current official Codex documentation defines
+  the target discovery and packaging contract. Otherwise use a focused skill or
+  normal Codex task coordination.
+- Keep paths plugin-relative, marketplace-relative, or repository-relative.
+- Keep secrets outside the package and use native authentication boundaries.
+- Treat hooks and external writes as trust and approval boundaries.
+- Preserve unrelated files and existing working-tree changes.
+- Do not add a custom configuration layer unless current native Codex surfaces
+  cannot express the requirement. Document the gap and keep any adapter narrow.
 
 ## Validation and publishing
 
-Run `npm test` and `npm run validate`. Also run the built-in plugin and skill
-validators used by the creation workflows when they are available.
+Run all of the following for affected work:
 
-Stage explicit paths only. Use Conventional Commit titles for pull requests and
-resolve every review thread before merging.
+```powershell
+npm test
+npm run validate
+```
+
+Also run the built-in plugin validator, the skill quick validator for every
+changed skill, and behavioral tests for direct, indirect, negative, missing
+dependency, and repository-context cases. Migration validation must use a new
+Codex task with the source marketplace and sibling plugins disabled.
+
+The pull request must state:
+
+- the user goal and vertical slice;
+- live upstream URLs consulted and the date checked;
+- context inputs and precedence;
+- native surfaces selected;
+- ports and adapters introduced;
+- defaults, configuration, and fallbacks;
+- migration dispositions and intentional differences, when applicable; and
+- commands and behavioral evidence used to validate the result.
+
+Stage explicit paths only. Use Conventional Commit pull-request titles, resolve
+every review thread, and do not merge while required checks are failing or
+pending.

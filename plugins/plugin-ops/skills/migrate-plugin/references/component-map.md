@@ -15,10 +15,14 @@ promise.
 | Registered server/integration mapping | Use `.app.json` only for the current registered MCP mapping contract. |
 | Commands or slash-command files | Prefer a skill. Keep no compatibility stub unless current Codex docs establish a separate need. |
 | Rules or persistent host instructions | Move consumer policy to `AGENTS.md` or native project/user config; keep reusable workflow instructions in a skill. |
-| Custom agent definitions | Map only when current Codex plugin docs define a native equivalent; otherwise express the workflow as a skill or drop it. |
+| Custom agent definitions | Use the current native Codex agent surface only when the goal needs an independently delegated role; otherwise express the cohesive workflow as a skill or drop it. |
 | Host-specific user configuration | Replace with explicit invocation input or native Codex configuration. Do not invent a plugin-local config system. |
+| Repository-specific defaults | Replace with discovery from the active `AGENTS.md` hierarchy and native project evidence; keep only safe generic fallbacks in the plugin. |
+| Scheduled jobs or follow-up templates | Map only to the current native automation surface and keep cadence outside the plugin package unless current packaging docs explicitly support a reusable template. |
 | Assets, templates, and references | Keep when portable and referenced through plugin-relative paths. |
 | Scripts | Keep only after testing on supported platforms and removing absolute paths, hidden dependencies, and source-host assumptions. |
 
 For every **drop**, record why the capability is unavailable or unnecessary.
 For every **replace**, record the Codex-native surface and behavioral difference.
+For every host or environment integration, name the narrow port it implements,
+its trust and side-effect boundary, and its missing-capability fallback.
