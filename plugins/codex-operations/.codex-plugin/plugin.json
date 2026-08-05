@@ -1,0 +1,28 @@
+{
+  "name": "codex-operations",
+  "version": "0.1.0",
+  "description": "Coordinate Codex work and identify evidence-backed opportunities for reusable skills.",
+  "author": {
+    "name": "Melodic Software",
+    "email": "info@melodicsoftware.com",
+    "url": "https://github.com/melodic-software"
+  },
+  "homepage": "https://github.com/melodic-software/codex-plugins#readme",
+  "repository": "https://github.com/melodic-software/codex-plugins",
+  "license": "MIT",
+  "keywords": ["codex", "coordination", "skills", "workflows", "operations"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Operations",
+    "shortDescription": "Coordinate work and improve reusable workflows",
+    "longDescription": "Coordinate multi-task Codex work with clear authority and verification boundaries, then review local session evidence for strong opportunities to create or improve reusable skills.",
+    "developerName": "Melodic Software",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/melodic-software/codex-plugins",
+    "defaultPrompt": [
+      "Coordinate this work across Codex tasks and agents.",
+      "Review recent sessions for reusable skill opportunities."
+    ]
+  }
+}
