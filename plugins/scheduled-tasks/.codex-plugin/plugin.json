@@ -1,0 +1,29 @@
+{
+  "name": "scheduled-tasks",
+  "version": "0.1.0",
+  "description": "Explain, list, create, and manage native Codex Scheduled tasks.",
+  "author": {
+    "name": "Melodic Software",
+    "email": "info@melodicsoftware.com",
+    "url": "https://github.com/melodic-software"
+  },
+  "homepage": "https://github.com/melodic-software/codex-plugins#readme",
+  "repository": "https://github.com/melodic-software/codex-plugins",
+  "license": "MIT",
+  "keywords": ["codex", "scheduled-tasks", "productivity", "monitoring", "reminders"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Scheduled Tasks",
+    "shortDescription": "Manage native Codex Scheduled tasks",
+    "longDescription": "Use current OpenAI documentation and the active native Codex tools to explain, list, create, inspect, update, pause, resume, and delete Scheduled tasks without introducing another scheduler.",
+    "developerName": "Melodic Software",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/melodic-software/codex-plugins",
+    "defaultPrompt": [
+      "List my Scheduled tasks and flag anything that needs attention.",
+      "Help me choose and create the right Scheduled task.",
+      "Review this Scheduled task before I update it."
+    ]
+  }
+}
