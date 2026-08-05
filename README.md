@@ -16,6 +16,13 @@ codex plugin add codex-operations@melodic-software-codex
 
 Start a new Codex task after installation so the new skills are discovered.
 
+## Quick reference
+
+Use the [Codex capability cheat sheet](docs/CODEX-CAPABILITY-CHEAT-SHEET.md)
+to distinguish built-in system skills, official bundled plugins, curated
+plugins, and this personal marketplace. It includes natural-language and
+explicit `$skill` or `$plugin:skill` prompt examples.
+
 ## Plugins
 
 `plugin-ops` dogfoods the marketplace by providing skills to:

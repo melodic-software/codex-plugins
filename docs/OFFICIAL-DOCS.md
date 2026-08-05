@@ -12,6 +12,8 @@ Read the smallest complete set that covers the affected surface.
 | Surface | Live pointer |
 | --- | --- |
 | Plugin overview and builder routing | [Build plugins](https://learn.chatgpt.com/docs/build-plugins) |
+| Skill and plugin distinction and explicit invocation | [Skills and plugins](https://learn.chatgpt.com/docs/skills-and-plugins) |
+| Built-in image generation and `$imagegen` invocation | [Image generation](https://learn.chatgpt.com/docs/image-generation) |
 | Plugin boundaries and component model | [Plugin architecture](https://developers.openai.com/plugins/concepts/plugins) |
 | Skill format, triggers, resources, and tests | [Build skills](https://developers.openai.com/plugins/build/skills) |
 | MCP tools, authentication, and server behavior | [Build an MCP server](https://developers.openai.com/plugins/build/mcp-server) |
@@ -21,6 +23,7 @@ Read the smallest complete set that covers the affected surface.
 | Durable repository instruction discovery | [Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
 | Lifecycle extension and trust | [Hooks](https://learn.chatgpt.com/docs/hooks) |
 | Installation and supported plugin surfaces | [Use plugins](https://learn.chatgpt.com/docs/plugins) |
+| Installed CLI inventory and `/skills` or `/plugins` behavior | [Codex CLI command reference](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) |
 | Native import behavior from another agent | [Import from another agent](https://learn.chatgpt.com/docs/import) |
 | Sandbox, approvals, and action boundaries | [Agent approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security) |
 | Native project instruction and configuration discovery | [Advanced configuration](https://learn.chatgpt.com/docs/config-file/config-advanced) |
