@@ -1,17 +1,83 @@
-# Official documentation
+# Live upstream source map
 
-Fetch these pages live before changing plugin architecture or operational
-guidance. This file is a URL index, not a cached specification.
+This file is a maintained navigation index. It is not a cached specification,
+a bibliography to reproduce, or permission to copy upstream prose. Open the
+relevant live pages before acting, record the URLs and verification date in the
+pull request, and keep only repository-owned decisions in this repository.
 
-- [Build plugins](https://learn.chatgpt.com/docs/build-plugins)
-- [Plugin architecture](https://developers.openai.com/plugins/concepts/plugins)
-- [Build skills](https://developers.openai.com/plugins/build/skills)
-- [Build an MCP server](https://developers.openai.com/plugins/build/mcp-server)
-- [Add optional UI](https://developers.openai.com/plugins/build/chatgpt-ui)
-- [Package plugins and marketplaces](https://developers.openai.com/plugins/build/plugins)
-- [Connect and test plugins](https://developers.openai.com/plugins/deploy/connect-chatgpt)
+## Required OpenAI sources
 
-This repository distributes a public Git-backed marketplace. It does not submit
-its plugins to OpenAI's universal public directory. The
-[submission documentation](https://developers.openai.com/plugins/deploy/submission)
-is relevant only if that policy changes.
+Read the smallest complete set that covers the affected surface.
+
+| Surface | Live pointer |
+| --- | --- |
+| Plugin overview and builder routing | [Build plugins](https://learn.chatgpt.com/docs/build-plugins) |
+| Plugin boundaries and component model | [Plugin architecture](https://developers.openai.com/plugins/concepts/plugins) |
+| Skill format, triggers, resources, and tests | [Build skills](https://developers.openai.com/plugins/build/skills) |
+| MCP tools, authentication, and server behavior | [Build an MCP server](https://developers.openai.com/plugins/build/mcp-server) |
+| Optional MCP-backed UI | [Add optional UI](https://developers.openai.com/plugins/build/chatgpt-ui) |
+| Manifests, paths, marketplaces, and packaging | [Package plugins and marketplaces](https://developers.openai.com/plugins/build/plugins) |
+| Local connection and behavioral testing | [Connect and test plugins](https://developers.openai.com/plugins/deploy/connect-chatgpt) |
+| Durable repository instruction discovery | [Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
+| Lifecycle extension and trust | [Hooks](https://learn.chatgpt.com/docs/hooks) |
+| Installation and supported plugin surfaces | [Use plugins](https://learn.chatgpt.com/docs/plugins) |
+| Native import behavior from another agent | [Import from another agent](https://learn.chatgpt.com/docs/import) |
+| Sandbox, approvals, and action boundaries | [Agent approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security) |
+| Native project instruction and configuration discovery | [Advanced configuration](https://learn.chatgpt.com/docs/config-file/config-advanced) |
+
+The marketplace is public and Git-backed, but it is not submitted to OpenAI's
+universal public directory. Keep [submission requirements](https://developers.openai.com/plugins/deploy/submission)
+as a pointer for compatibility review only unless repository policy changes.
+
+## Normative ecosystem contracts
+
+Use these when a component relies on the corresponding open standard:
+
+- [Agent Skills specification](https://agentskills.io/specification)
+- [Model Context Protocol specification](https://modelcontextprotocol.io/specification/latest)
+
+OpenAI's current product contract still controls how Codex packages, discovers,
+trusts, and runs those components.
+
+## Official implementation evidence
+
+Use public implementations to test assumptions after reading the product
+contract. Treat examples as evidence, not templates to copy blindly:
+
+- [OpenAI plugins](https://github.com/openai/plugins)
+- [OpenAI skills](https://github.com/openai/skills)
+
+## Source-host documentation for migrations
+
+Read the current official source-host documentation for every migrated
+component and record the exact pages in the migration pull request:
+
+- [Claude Code documentation](https://docs.claude.com/en/docs/claude-code/overview)
+- [Claude Code plugins](https://docs.claude.com/en/docs/claude-code/plugins)
+- [Cursor documentation](https://cursor.com/docs)
+- [Cursor plugins](https://cursor.com/docs/plugins)
+
+If a source host moves a page, update this index in the same change that relies
+on the new location. Do not use third-party tutorials to establish a host
+contract when official documentation exists.
+
+## Engineering design pointers
+
+Use these only when the architecture decision they address is material. They do
+not override Codex documentation:
+
+- [Hexagonal architecture](https://alistair.cockburn.us/hexagonal-architecture/)
+- [The Twelve-Factor App: configuration](https://12factor.net/config)
+- [Semantic Versioning](https://semver.org/)
+
+## Freshness and failure rules
+
+- Fetch live pages for every plugin action covered by `AGENTS.md`; do not rely
+  on this index alone.
+- Record URLs and the date checked, not quotations or copied examples.
+- Verify CLI syntax with the installed release when commands are involved.
+- When a pointer is unavailable, search only the upstream owner's official
+  properties before using another source.
+- When the current target contract remains uncertain, stop the contract change
+  and record the unresolved question. Do not turn an assumption into policy.
+- Review this index whenever a plugin surface changes and during each migration.

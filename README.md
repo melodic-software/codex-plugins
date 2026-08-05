@@ -38,10 +38,15 @@ docs/OFFICIAL-DOCS.md
 
 ## Contributing
 
-Read [the plugin philosophy](docs/PLUGIN-PHILOSOPHY.md) before adding or
-migrating a capability. Fetch the current official documentation from the URLs
-in [OFFICIAL-DOCS.md](docs/OFFICIAL-DOCS.md); do not treat a copied host
-manifest or an old documentation snapshot as authoritative.
+Complete the mandatory live-documentation preflight in [AGENTS.md](AGENTS.md)
+before any plugin action. The [plugin philosophy](docs/PLUGIN-PHILOSOPHY.md)
+defines repository-context discovery, native-extension, portability, and
+architecture gates. The [migration playbook](docs/MIGRATION-PLAYBOOK.md) turns
+those gates into a component ledger and isolation test matrix.
+
+[OFFICIAL-DOCS.md](docs/OFFICIAL-DOCS.md) is a maintained pointer index. Open
+the relevant live pages and record their URLs and verification date; do not
+copy upstream documentation or treat an old host manifest as authoritative.
 
 Use Codex's built-in `$plugin-creator` and `$skill-creator` workflows to scaffold
 new packages, then run:
@@ -50,6 +55,9 @@ new packages, then run:
 npm test
 npm run validate
 ```
+
+The test suite also enforces the documentation contract and required upstream
+pointers so policy surfaces do not drift apart silently.
 
 Repository creation and GitHub settings are governed by
 [`melodic-software/github-iac`](https://github.com/melodic-software/github-iac).

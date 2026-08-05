@@ -1,35 +1,56 @@
 ---
 name: migrate-plugin
-description: Translate a Claude Code, Cursor, or older Codex plugin into an independent Codex-native package. Use when porting skills, hooks, MCP configuration, manifests, marketplace entries, or plugin behavior between agent hosts.
+description: Translate a Claude Code, Cursor, or older Codex plugin into an independent Codex-native package. Use when porting skills, agents, hooks, MCP configuration, manifests, marketplace entries, scripts, or plugin behavior between agent hosts.
 ---
 
 # Migrate Plugin
 
-Port the capability, not the source host's packaging assumptions.
+Port the user capability and its evidence, not the source host's packaging
+assumptions.
 
 ## Workflow
 
-1. Record the source repository and exact commit. Read every source component
-   and its tests before editing.
-2. Fetch current documentation for both the source host and Codex. Read
-   [references/component-map.md](references/component-map.md) for the baseline
-   component mapping, then override it when current official docs differ.
-3. Classify every component as **keep**, **reshape**, **replace**, or **drop**.
-   Record drops and replacements explicitly.
-4. Scaffold the Codex package with `$plugin-creator` and each skill with
+1. Record the source repository, exact commit, version, and target base commit.
+   Read every source component and its tests before editing.
+2. Fetch current official documentation for both the source host and Codex. In
+   this marketplace, complete the root `AGENTS.md` preflight and read
+   `docs/PLUGIN-PHILOSOPHY.md` plus `docs/MIGRATION-PLAYBOOK.md`. Record live
+   URLs and the date checked; copy no upstream prose.
+3. Define the user-goal vertical slice: inputs, repository context, output,
+   side effects, boundaries, platform variants, and acceptance evidence.
+4. Read [references/component-map.md](references/component-map.md), then create
+   a complete **keep**, **reshape**, **replace**, or **drop** ledger. Override
+   the map when current official docs differ. Record every replacement and drop.
+5. Identify the cohesive core, inbound ports for intent and repository context,
+   outbound ports for files, shell, MCP, connectors, network, UI, and writes,
+   and the smallest Codex-native adapter for each port.
+6. Scaffold the Codex package with `$plugin-creator` and each skill with
    `$skill-creator`. Never add a second host manifest to the source plugin.
-5. Rewrite host-specific hooks, MCP wiring, configuration, paths, and tool names
-   using current Codex contracts. Preserve domain logic only after removing
-   user, company, machine, and sibling-install assumptions.
-6. Make repository behavior adapt to the active `AGENTS.md` hierarchy and
-   project context. Keep consumer-specific policy outside the plugin.
-7. Run `$verify-plugin`, the built-in creation validators, and behavioral tests
-   in a new Codex task with the source marketplace disabled.
-8. Summarize preserved behavior, intentional differences, unsupported source
-   components, and validation evidence in the pull request.
+7. Rewrite host-specific hooks, MCP wiring, agents, settings, paths, tools, and
+   lifecycle behavior using current Codex contracts. Preserve domain logic only
+   after removing user, company, machine, source-install, and sibling-plugin
+   assumptions.
+8. Discover behavior from the current request, active `AGENTS.md` hierarchy,
+   native project evidence, and available capabilities before applying plugin
+   defaults. Keep consumer-specific policy outside the plugin.
+9. Prefer explicit input and native Codex configuration. Put optional tools
+   behind narrow adapters with a useful fallback or clear unsupported result.
+10. Run `$verify-plugin`, the built-in creation validators, and behavioral tests
+    in a new Codex task with the source marketplace and sibling plugins disabled.
+
+Test direct, indirect, negative, incomplete, nested-repository-context, missing-
+dependency, platform, existing-change, partial-failure, and isolated-install
+cases. Compare outcomes and side effects, not copied wording.
+
+## Return contract
+
+The pull request must record source and target commits, live upstream pointers,
+the use-case inventory, the component ledger, native surfaces, ports and
+adapters, context precedence, defaults and fallbacks, intentional differences,
+and validation evidence.
 
 ## Boundary
 
-Do not create automatic cross-repository synchronization. The Claude Code,
-Cursor, and Codex repositories remain independent sources of truth whose useful
-ideas can be ported deliberately in either direction.
+Do not create automatic cross-repository synchronization. Claude Code, Cursor,
+and Codex packages remain independent sources of truth. Port improvements
+deliberately in either direction.
