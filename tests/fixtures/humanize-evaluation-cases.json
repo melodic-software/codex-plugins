@@ -1,0 +1,142 @@
+[
+  {
+    "id": "direct-technical-markdown",
+    "kind": "direct",
+    "request": "Use $humanize to revise this Markdown release note without changing technical details.",
+    "artifact": "Version 4.2.0 adds `deploy --max-retries N` and fixes [#418](https://example.com/issues/418). It represents a pivotal milestone in the evolving deployment landscape.",
+    "mustPreserve": ["4.2.0", "`deploy --max-retries N`", "https://example.com/issues/418"],
+    "mustNotAdd": ["default retry count", "issue cause"],
+    "mustRemove": ["pivotal milestone", "evolving deployment landscape"],
+    "expect": "Remove unsupported significance while preserving code, link, and version."
+  },
+  {
+    "id": "indirect-team-voice",
+    "kind": "indirect",
+    "request": "This announcement sounds generic. Make it sound like our team.",
+    "artifact": "We are thrilled to announce a groundbreaking schedule evolution. Product review moves to Tuesday at 2:00 p.m. on September 1.",
+    "context": "Team example: We deploy on Tuesdays. If the build is red, we move it to Thursday.",
+    "mustPreserve": ["Tuesday", "2:00 p.m.", "September 1"],
+    "mustRemove": ["thrilled", "groundbreaking", "schedule evolution"],
+    "expect": "Use the supplied direct voice and remove promotional framing."
+  },
+  {
+    "id": "incomplete-audience",
+    "kind": "incomplete",
+    "request": "Humanize this for publication.",
+    "artifact": "The proposal changes how customers request refunds.",
+    "expect": "Ask one concise question because publication destination materially changes tone and structure."
+  },
+  {
+    "id": "negative-authorship-only",
+    "kind": "negative",
+    "request": "Was this paragraph written by AI?",
+    "artifact": "The proposal changes how customers request refunds.",
+    "mustMention": ["determine"],
+    "expect": "Do not activate for pure authorship classification with no editing goal."
+  },
+  {
+    "id": "mixed-code-and-frontmatter",
+    "kind": "edge",
+    "request": "Humanize the prose in this Markdown file.",
+    "artifact": "---\ntitle: Retry policy\nversion: 2\n---\nOur robust policy fosters resilience.\n```yaml\nretries: 3\n```",
+    "mustPreserve": ["title: Retry policy", "version: 2", "retries: 3", "```yaml"],
+    "mustNotAdd": ["system", "recover from failures"],
+    "mustRemove": ["robust policy", "fosters resilience"],
+    "expect": "Edit prose only and preserve frontmatter, code fence, and values."
+  },
+  {
+    "id": "citation-number-quotation",
+    "kind": "edge",
+    "request": "Humanize this report paragraph.",
+    "artifact": "The rate fell from 18% to 12% in 2025. The report calls this a ‘material reduction’ [1](https://example.com/report).",
+    "mustPreserve": ["18%", "12%", "2025", "material reduction", "https://example.com/report"],
+    "expect": "Preserve numbers, quotation text, citation target, direction, and date."
+  },
+  {
+    "id": "second-language-voice",
+    "kind": "edge",
+    "request": "Make this clearer but keep my formal second-language voice.",
+    "artifact": "Payments service is not moved because retry logic is different. Maybe test finishes next week, but date is not confirmed.",
+    "mustPreserve": ["Payments", "retry logic", "next week", "not confirmed"],
+    "mustNotAdd": ["faster", "safer", "more reliable"],
+    "expect": "Improve clarity without casual slang, invented facts, or erased uncertainty."
+  },
+  {
+    "id": "opinion-and-brand-voice",
+    "kind": "edge",
+    "request": "Humanize this founder note while preserving the stated opinion.",
+    "artifact": "I believe this is our best release yet. Version 3.0 ships Friday.",
+    "mustPreserve": ["I believe", "best release yet", "3.0", "Friday"],
+    "expect": "Preserve clearly framed opinion and concrete release details."
+  },
+  {
+    "id": "structure-preservation",
+    "kind": "edge",
+    "request": "Humanize this runbook.",
+    "artifact": "## Before deploy\n1. Check status.\n2. Notify support.\n\n## After deploy\n1. Check metrics.",
+    "mustPreserve": ["## Before deploy", "## After deploy", "1.", "2."],
+    "expect": "Preserve heading hierarchy, list semantics, and step order."
+  },
+  {
+    "id": "installed-plugin-smoke",
+    "kind": "direct",
+    "request": "Use $humanize to revise this maintenance notice.",
+    "artifact": "In today's rapidly evolving digital landscape, we are pleased to announce that a brief maintenance window of 30 minutes will begin at 02:00 UTC on August 6.",
+    "mustPreserve": ["30-minute", "02:00 UTC", "August 6"],
+    "mustRemove": ["rapidly evolving digital landscape", "pleased to announce"],
+    "expect": "Load the installed plugin in a fresh Codex task and return a concise notice without generic framing."
+  },
+  {
+    "id": "tracked-in-place-default",
+    "kind": "mode",
+    "request": "Humanize docs/note.md.",
+    "context": "docs/note.md is tracked by the temporary Git repository and the request authorizes changing it.",
+    "artifact": "We are thrilled to announce that support hours move to 08:00 UTC on Monday.",
+    "mustMention": ["docs/note.md", "in place"],
+    "expect": "Choose in-place editing without asking for a mode."
+  },
+  {
+    "id": "untracked-copy-collision",
+    "kind": "mode",
+    "request": "Humanize brief.md.",
+    "context": "brief.md is untracked and brief.humanized.md already exists with content that must remain unchanged.",
+    "artifact": "In today's rapidly evolving landscape, the workshop starts at 10:00 UTC.",
+    "mustMention": ["brief.humanized-2.md"],
+    "expect": "Keep the untracked original and select the first available incremented copy name."
+  },
+  {
+    "id": "multiple-file-defaults",
+    "kind": "mode",
+    "request": "Humanize a.md and b.md.",
+    "context": "a.md is tracked; b.md is untracked; neither has a conflicting output path; both changes are authorized.",
+    "artifact": "a.md: We are pleased to announce a pivotal maintenance update at 09:00 UTC.\nb.md: We are excited to announce that the review starts at 11:00 UTC.",
+    "mustMention": ["a.md", "in place", "b.humanized.md"],
+    "expect": "Resolve the default independently for each file."
+  },
+  {
+    "id": "missing-file",
+    "kind": "mode",
+    "request": "Humanize missing.md.",
+    "artifact": "Scenario: missing.md does not exist and cannot be read.",
+    "mustMention": ["missing.md", "not found"],
+    "expect": "Stop and report the missing input without fabricating content."
+  },
+  {
+    "id": "unavailable-format-adapter",
+    "kind": "mode",
+    "request": "Humanize report.indd in place.",
+    "context": "No structure-preserving InDesign adapter is available.",
+    "artifact": "INCOMPATIBLE-DESKTOP-PUBLISHING-FIXTURE",
+    "mustMention": ["unsupported", "report.indd"],
+    "expect": "Stop rather than perform a lossy plain-text rewrite."
+  },
+  {
+    "id": "nested-context-precedence",
+    "kind": "context",
+    "request": "Humanize docs/product/note.md.",
+    "context": "Root AGENTS.md: Use a formal voice and avoid contractions. Nested docs/product/AGENTS.md: Use short sentences and contractions in product notes; this overrides the root restriction. docs/style.md: Avoid contractions in all documents.",
+    "artifact": "We are delighted to announce that the search panel does not close when you select a filter.",
+    "mustMention": ["docs/product/AGENTS.md", "short product-note sentences", "contractions"],
+    "expect": "Use the active nested instruction over the more generic repository style guide and surface any irreconcilable AGENTS conflict."
+  }
+]

@@ -13,6 +13,7 @@ codex plugin marketplace add melodic-software/codex-plugins --ref main
 codex plugin add plugin-ops@melodic-software-codex
 codex plugin add codex-operations@melodic-software-codex
 codex plugin add scheduled-tasks@melodic-software-codex
+codex plugin add humanize@melodic-software-codex
 ```
 
 Start a new Codex task after installation so the new skills are discovered.
@@ -52,6 +53,19 @@ Provides `manage-scheduled-tasks`, a focused skill that:
 - lists, inspects, creates, updates, pauses, resumes, and deletes tasks when the
   active native capability supports those operations; and
 - never introduces its own scheduler or edits native task state directly.
+
+### `humanize`
+
+Provides `humanize`, a focused writing skill that:
+
+- revises pasted prose or text-bearing files for specificity, natural rhythm,
+  audience fit, and an established author, team, or repository voice;
+- follows explicit instructions, the active `AGENTS.md` chain, relevant style
+  guidance, and supplied exemplars before applying its generic rubric;
+- preserves meaning, evidence, citations, formatting, and legitimate stylistic
+  variation; and
+- chooses repository-aware write defaults while keeping non-versioned originals
+  intact unless the user requests an overwrite.
 
 ## Layout
 

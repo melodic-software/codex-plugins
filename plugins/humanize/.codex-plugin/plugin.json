@@ -1,0 +1,29 @@
+{
+  "name": "humanize",
+  "version": "0.1.0",
+  "description": "Revise written material for a natural, context-aware voice while preserving meaning and format by default.",
+  "author": {
+    "name": "Melodic Software",
+    "email": "info@melodicsoftware.com",
+    "url": "https://github.com/melodic-software"
+  },
+  "homepage": "https://github.com/melodic-software/codex-plugins#readme",
+  "repository": "https://github.com/melodic-software/codex-plugins",
+  "license": "MIT",
+  "keywords": ["codex", "writing", "editing", "voice", "style"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Humanize",
+    "shortDescription": "Revise prose for a natural, context-aware voice",
+    "longDescription": "Revise pasted text or text-bearing files for specificity, natural rhythm, audience fit, and an established author, team, or repository voice while preserving meaning, evidence, and document structure by default.",
+    "developerName": "Melodic Software",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/melodic-software/codex-plugins",
+    "defaultPrompt": [
+      "Humanize this document without changing its meaning.",
+      "Revise this file to match our repository's voice.",
+      "Audit this draft for formulaic writing and fix it."
+    ]
+  }
+}

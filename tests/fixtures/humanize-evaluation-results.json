@@ -1,0 +1,161 @@
+{
+  "executedAt": "2026-08-05",
+  "method": "Fresh subagents read the working-tree skill and complete rubric without reading this result file; the installed smoke used a temporary local marketplace with sibling plugins disabled.",
+  "implementationDigest": {
+    "note": "sha256 of the skill and rubric these results were produced against, over LF-normalized bytes so the digest is identical on every checkout regardless of core.autocrlf. Editing either file without re-running the evaluations fails the suite, so a recorded output cannot silently outlive the behavior it records.",
+    "plugins/humanize/skills/humanize/SKILL.md": "83f125b4b7e0ea2e40e8c4ef8ec08a945cd5a518c7d699b87d06eac8934c6500",
+    "plugins/humanize/skills/humanize/references/revision-rubric.md": "18161d3da63ee82e116703d918b9653aaa8a1a585907fe2c796d8bdf89ecd0f3"
+  },
+  "operationalEvidence": {
+    "repository": ".tmp-humanize-operational",
+    "seedCommit": "b4e8e8fc334eb01e98e3990951a91807dae4d551",
+    "taskRefs": ["/root/forward_operational_files", "/root/forward_operational_context"],
+    "postconditions": {
+      "trackedModified": ["a.md", "docs/note.md", "docs/product/note.md"],
+      "untrackedCreated": ["b.humanized.md", "brief.humanized-2.md"],
+      "unchanged": ["b.md", "brief.md", "brief.humanized.md", "report.indd"],
+      "missing.md": "absent"
+    },
+    "sha256": {
+      "docs/note.md": "a2dd6b915df45ad13183c84f11dc0df622d8a7c858e974ca039f6c582e67ef85",
+      "a.md": "cbc66808af7ca7117b8ae56959df1e33a613a73dd3114ac3c9423ffb7c683d49",
+      "brief.md": "71c8ae8cd08d2c0fc6668d9b81a5fe7b4c70d030aca83a058be2f437019c9b2a",
+      "brief.humanized.md": "2bfb61e886a8a92cf4105bc3d969f70158c3f7147e5a55283e870ebe9cc14f33",
+      "brief.humanized-2.md": "2941734f900cd69216362e77472031a5a7a3e09a137600d6a39f44b23f0f2e9b",
+      "b.md": "4aafc23a588d8a2f7d08e03f549a9839ea4ed6a637015548ec7a4d53888a5958",
+      "b.humanized.md": "27b71ec340408a724a4d9ae4a77ce9280751f86cd11b82462f1f061ca8e0a53e",
+      "docs/product/note.md": "77e9b5eba22f8fdc20923fc9406f8716ef346d43f419acc5e46ffb7b9f707499",
+      "report.indd": "3d9ad3c0ed8adc778cf5acc77e11fa83baf3831b862bcfe65d9cf921173a729a"
+    }
+  },
+  "results": [
+    {
+      "id": "direct-technical-markdown",
+      "taskRef": "/root/forward_batch_final",
+      "inputDigest": "719d982f65b3d9ba11db22aa8c72b5247d7cb5d15d3f7ded4e299020488b7fe3",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "Version 4.2.0 adds `deploy --max-retries N` and fixes [#418](https://example.com/issues/418)."
+    },
+    {
+      "id": "indirect-team-voice",
+      "taskRef": "/root/forward_batch_final",
+      "inputDigest": "6c0ff328b975e9de5a298b8a12d0f90a19e1d54761c536615de23107e2431085",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "We’re moving product review to Tuesday at 2:00 p.m. on September 1."
+    },
+    {
+      "id": "incomplete-audience",
+      "taskRef": "/root/forward_incomplete_final",
+      "inputDigest": "b19e87b002ab14584fe4576c9cd130d314715a4a3936f28d7376d0f19993a908",
+      "surface": "fresh-subagent",
+      "resultType": "clarification",
+      "output": "Which publication and audience should I target?"
+    },
+    {
+      "id": "negative-authorship-only",
+      "taskRef": "/root/forward_protected_final",
+      "inputDigest": "8c4984e032681137d4198d424defa3888aa29494bb241c99f258050535c666cf",
+      "surface": "fresh-subagent",
+      "resultType": "classification-response",
+      "output": "I can’t determine whether this was written by AI from the paragraph alone."
+    },
+    {
+      "id": "mixed-code-and-frontmatter",
+      "taskRef": "/root/forward_mixed_retry",
+      "inputDigest": "b1cf702ce77aa6d501f983bb153ea78bff2949ff66c8f57501664dec798c2883",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "---\ntitle: Retry policy\nversion: 2\n---\nThe policy allows three retries.\n```yaml\nretries: 3\n```"
+    },
+    {
+      "id": "citation-number-quotation",
+      "taskRef": "/root/forward_protected_final",
+      "inputDigest": "e6104a57dd6984506cd334ea84ffd698b9a76077bba5c4d1bad27ba9c4c52aa4",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "In 2025, the rate fell from 18% to 12%. The report describes this as a ‘material reduction’ [1](https://example.com/report)."
+    },
+    {
+      "id": "second-language-voice",
+      "taskRef": "/root/forward_batch_final",
+      "inputDigest": "01c2b2b6d01f4d4bf36fa55bb280f29725d56e55a560cd45b7824d2308b14787",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "The Payments service has not been moved because its retry logic is different. The test may finish next week, but the date is not confirmed."
+    },
+    {
+      "id": "opinion-and-brand-voice",
+      "taskRef": "/root/forward_protected_final",
+      "inputDigest": "03062b78c9618f25c516148fa8c8cdc509e4cef799768df7efd7e1e5ba02ad0d",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "I believe version 3.0 is our best release yet. It ships Friday."
+    },
+    {
+      "id": "structure-preservation",
+      "taskRef": "/root/forward_batch_final",
+      "inputDigest": "e9c67d9f31bf8949bd35b82d3d9864c8fc47eedf753c04b4f83b14d7e8d5cc2a",
+      "surface": "fresh-subagent",
+      "resultType": "revision",
+      "output": "## Before deploy\n1. Check the status.\n2. Notify support.\n\n## After deploy\n1. Check the metrics."
+    },
+    {
+      "id": "installed-plugin-smoke",
+      "taskRef": "codex-exec-local-marketplace-smoke",
+      "inputDigest": "e7a659aaddfba35f955725e98a359dad2d4e1207ad6bb5c477d8be692ed1f537",
+      "surface": "installed-plugin/codex-cli-0.146.0",
+      "resultType": "revision",
+      "output": "The 30-minute maintenance window begins at 02:00 UTC on August 6."
+    },
+    {
+      "id": "tracked-in-place-default",
+      "taskRef": "/root/forward_operational_files",
+      "inputDigest": "feea99737b78c0909572e4c23cbcc4433887f06a01dfb7792af7ce8c519f0b3b",
+      "surface": "operational-temp-git-repository",
+      "resultType": "operation",
+      "output": "Operational test completed. Edited in place: `docs/note.md`, `a.md`. Created: `brief.humanized-2.md` because `brief.humanized.md` already existed; `b.humanized.md`. Preserved unchanged: `brief.md`, `brief.humanized.md`, `b.md`, `report.indd`. Stopped: `missing.md` was not found. `report.indd` was unsupported because no structure-preserving InDesign adapter was available."
+    },
+    {
+      "id": "untracked-copy-collision",
+      "taskRef": "/root/forward_operational_files",
+      "inputDigest": "71ef81eddb7c3e4d6d29dcbffecf121cbcf4d778e140ad80c29df564bd7f99c2",
+      "surface": "operational-temp-git-repository",
+      "resultType": "operation",
+      "output": "Operational test completed. Edited in place: `docs/note.md`, `a.md`. Created: `brief.humanized-2.md` because `brief.humanized.md` already existed; `b.humanized.md`. Preserved unchanged: `brief.md`, `brief.humanized.md`, `b.md`, `report.indd`. Stopped: `missing.md` was not found. `report.indd` was unsupported because no structure-preserving InDesign adapter was available."
+    },
+    {
+      "id": "multiple-file-defaults",
+      "taskRef": "/root/forward_operational_files",
+      "inputDigest": "763b15616e5bd03c2ab7d6b746f5ea815991ef7e03531e425c1e42b8defd9f96",
+      "surface": "operational-temp-git-repository",
+      "resultType": "operation",
+      "output": "Operational test completed. Edited in place: `docs/note.md`, `a.md`. Created: `brief.humanized-2.md` because `brief.humanized.md` already existed; `b.humanized.md`. Preserved unchanged: `brief.md`, `brief.humanized.md`, `b.md`, `report.indd`. Stopped: `missing.md` was not found. `report.indd` was unsupported because no structure-preserving InDesign adapter was available."
+    },
+    {
+      "id": "missing-file",
+      "taskRef": "/root/forward_operational_files",
+      "inputDigest": "57cd903b6fd01c474119e8a31d16b1edf663f26a7dcd749f8ff90f1e4138c1bd",
+      "surface": "operational-temp-git-repository",
+      "resultType": "operation",
+      "output": "Operational test completed. Edited in place: `docs/note.md`, `a.md`. Created: `brief.humanized-2.md` because `brief.humanized.md` already existed; `b.humanized.md`. Preserved unchanged: `brief.md`, `brief.humanized.md`, `b.md`, `report.indd`. Stopped: `missing.md` was not found. `report.indd` was unsupported because no structure-preserving InDesign adapter was available."
+    },
+    {
+      "id": "unavailable-format-adapter",
+      "taskRef": "/root/forward_operational_files",
+      "inputDigest": "9597b0413e4006ebe203de250e71f22eeadebc3e341c088bf0db0e57448b19b8",
+      "surface": "operational-temp-git-repository",
+      "resultType": "operation",
+      "output": "Operational test completed. Edited in place: `docs/note.md`, `a.md`. Created: `brief.humanized-2.md` because `brief.humanized.md` already existed; `b.humanized.md`. Preserved unchanged: `brief.md`, `brief.humanized.md`, `b.md`, `report.indd`. Stopped: `missing.md` was not found. `report.indd` was unsupported because no structure-preserving InDesign adapter was available."
+    },
+    {
+      "id": "nested-context-precedence",
+      "taskRef": "/root/forward_operational_context",
+      "inputDigest": "d8f8164aea5f5cbcc12c96f0fc4596492a6fc32a2023fbc6d1c23ba04685c6d5",
+      "surface": "operational-temp-git-repository",
+      "resultType": "operation",
+      "output": "Revised [note.md](docs/product/note.md) in place.\n\nApplied precedence:\n\n1. Explicit request: humanize the target in place.\n2. Root `AGENTS.md`: formal voice.\n3. Nested `docs/product/AGENTS.md`: short product-note sentences; its contraction rule overrides the root restriction.\n4. `docs/style.md`: general no-contractions guidance, superseded by the nested rule.\n5. Bundled humanization rubric: removed promotional framing and stated the behavior directly.\n\nResult: “The search panel stays open when you select a filter.”"
+    }
+  ]
+}
