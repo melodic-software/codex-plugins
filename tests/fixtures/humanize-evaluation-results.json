@@ -1,6 +1,11 @@
 {
   "executedAt": "2026-08-05",
   "method": "Fresh subagents read the working-tree skill and complete rubric without reading this result file; the installed smoke used a temporary local marketplace with sibling plugins disabled.",
+  "implementationDigest": {
+    "note": "sha256 of the skill and rubric these results were produced against, over LF-normalized bytes so the digest is identical on every checkout regardless of core.autocrlf. Editing either file without re-running the evaluations fails the suite, so a recorded output cannot silently outlive the behavior it records.",
+    "plugins/humanize/skills/humanize/SKILL.md": "83f125b4b7e0ea2e40e8c4ef8ec08a945cd5a518c7d699b87d06eac8934c6500",
+    "plugins/humanize/skills/humanize/references/revision-rubric.md": "18161d3da63ee82e116703d918b9653aaa8a1a585907fe2c796d8bdf89ecd0f3"
+  },
   "operationalEvidence": {
     "repository": ".tmp-humanize-operational",
     "seedCommit": "b4e8e8fc334eb01e98e3990951a91807dae4d551",
@@ -150,7 +155,7 @@
       "inputDigest": "d8f8164aea5f5cbcc12c96f0fc4596492a6fc32a2023fbc6d1c23ba04685c6d5",
       "surface": "operational-temp-git-repository",
       "resultType": "operation",
-      "output": "Revised [note.md](D:\\repos\\github.com\\melodic-software\\codex-plugins\\.tmp-humanize-operational\\docs\\product\\note.md) in place.\n\nApplied precedence:\n\n1. Explicit request: humanize the target in place.\n2. Root `AGENTS.md`: formal voice.\n3. Nested `docs/product/AGENTS.md`: short product-note sentences; its contraction rule overrides the root restriction.\n4. `docs/style.md`: general no-contractions guidance, superseded by the nested rule.\n5. Bundled humanization rubric: removed promotional framing and stated the behavior directly.\n\nResult: “The search panel stays open when you select a filter.”"
+      "output": "Revised [note.md](docs/product/note.md) in place.\n\nApplied precedence:\n\n1. Explicit request: humanize the target in place.\n2. Root `AGENTS.md`: formal voice.\n3. Nested `docs/product/AGENTS.md`: short product-note sentences; its contraction rule overrides the root restriction.\n4. `docs/style.md`: general no-contractions guidance, superseded by the nested rule.\n5. Bundled humanization rubric: removed promotional framing and stated the behavior directly.\n\nResult: “The search panel stays open when you select a filter.”"
     }
   ]
 }

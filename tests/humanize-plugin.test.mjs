@@ -246,3 +246,84 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
     assert.equal(resultsById.get(id).resultType, "operation");
   }
 });
+
+test("recorded evaluations are bound to the skill they were produced against", async () => {
+  const execution = await readJson("tests/fixtures/humanize-evaluation-results.json");
+  const digests = execution.implementationDigest;
+
+  // The per-case inputDigest covers request/context/artifact only, so editing
+  // SKILL.md or the rubric leaves every recorded output passing against
+  // behavior that no longer exists. These digests close that: change either
+  // file and this fails until the evaluations are re-run and re-recorded.
+  //
+  // Normalized to LF before hashing — the repository checks out CRLF on
+  // Windows, so raw bytes would differ per checkout and the digest would be
+  // unpinnable rather than stale-detecting.
+  for (const path of [skillPath, rubricPath]) {
+    const normalized = (await read(path)).replace(/\r\n/gu, "\n");
+    const digest = createHash("sha256").update(normalized).digest("hex");
+    assert.equal(
+      digests[path],
+      digest,
+      `${path} changed since the evaluations were recorded — re-run them and update implementationDigest`,
+    );
+  }
+});
+
+test("each operational evaluation is scoped to the files its own request names", async () => {
+  const execution = await readJson("tests/fixtures/humanize-evaluation-results.json");
+  const resultsById = new Map(execution.results.map((result) => [result.id, result]));
+
+  // The six operational scenarios were driven as two batched task runs, so
+  // each recorded `output` is the whole batch's report. `mustMention` alone
+  // therefore passes whenever the batch happens to name the file — it cannot
+  // tell a scoped result from one that also wrote elsewhere. These assertions
+  // pin the per-request postcondition instead: the outcome each request's own
+  // target must show, and for `missing-file`, that nothing was written at all.
+  const scopes = {
+    "tracked-in-place-default": { target: "docs/note.md", outcome: /Edited in place: [^.]*`docs\/note\.md`/u },
+    "untracked-copy-collision": { target: "brief.md", outcome: /Created: `brief\.humanized-2\.md` because `brief\.humanized\.md` already existed/u },
+    "multiple-file-defaults": { target: "a.md", outcome: /`b\.humanized\.md`/u },
+    "unavailable-format-adapter": { target: "report.indd", outcome: /`report\.indd` was unsupported/u },
+    "nested-context-precedence": { target: "docs/product/note.md", outcome: /^Revised \[note\.md\]\(docs\/product\/note\.md\) in place\./u },
+  };
+
+  for (const [id, { target, outcome }] of Object.entries(scopes)) {
+    const { output } = resultsById.get(id);
+    assert.match(output, new RegExp(target.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"), `${id} must name its target`);
+    assert.match(output, outcome, `${id} must record its own request's outcome`);
+  }
+
+  // missing.md is the one case whose guarantee is a NON-write. The recorded
+  // output must say it stopped, and the run's postconditions must show the
+  // file absent and unlisted in every written-file set — the aggregate report
+  // naming other files is what made this case unverifiable before.
+  const missing = resultsById.get("missing-file").output;
+  assert.match(missing, /Stopped: `missing\.md` was not found/u);
+
+  const { postconditions } = execution.operationalEvidence;
+  assert.equal(postconditions["missing.md"], "absent");
+  for (const written of [...postconditions.trackedModified, ...postconditions.untrackedCreated]) {
+    assert.notEqual(written, "missing.md");
+  }
+
+  // Every file the run reports as written must be one a request actually
+  // named, or produced by the skill's documented copy-mode naming. A write
+  // outside that set is out-of-scope behavior the batched output would hide.
+  const authorized = new Set([
+    "docs/note.md",
+    "a.md",
+    "docs/product/note.md",
+    "b.humanized.md",
+    "brief.humanized-2.md",
+  ]);
+  for (const written of [...postconditions.trackedModified, ...postconditions.untrackedCreated]) {
+    assert.ok(authorized.has(written), `unauthorized write outside any request's scope: ${written}`);
+  }
+
+  // The converse: files no request authorized changing must be reported
+  // unchanged, which is what makes "scoped" mean something.
+  for (const untouched of ["brief.md", "brief.humanized.md", "b.md", "report.indd"]) {
+    assert.ok(postconditions.unchanged.includes(untouched), `${untouched} must be recorded unchanged`);
+  }
+});
