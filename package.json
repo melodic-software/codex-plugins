@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test tests/documentation-contract.test.mjs tests/codex-operations.test.mjs tests/scheduled-tasks-plugin.test.mjs tests/humanize-plugin.test.mjs tests/codex-operations-plugin.test.mjs plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.test.mjs",
+    "test": "node --test tests/documentation-contract.test.mjs tests/codex-operations.test.mjs tests/scheduled-tasks-plugin.test.mjs tests/humanize-plugin.test.mjs tests/codex-operations-plugin.test.mjs tests/plugin-ops-plugin.test.mjs plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.test.mjs",
     "validate": "node plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.mjs ."
   }
 }
