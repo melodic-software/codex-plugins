@@ -48,8 +48,39 @@ async function createFixture(options = {}) {
   });
   const skillRoot = path.join(pluginRoot, "skills", "sample-skill");
   await mkdir(path.join(skillRoot, "agents"), { recursive: true });
-  await writeFile(path.join(skillRoot, "SKILL.md"), "---\nname: sample-skill\ndescription: Validate sample fixtures during tests.\n---\n\n# Sample Skill\n");
-  await writeFile(path.join(skillRoot, "agents", "openai.yaml"), "interface:\n  display_name: \"Sample Skill\"\n  short_description: \"Validate sample plugin fixtures\"\n  default_prompt: \"Use $sample-skill to validate this fixture.\"\n");
+
+  let skillBody;
+  if (options.missingFrontmatter) {
+    skillBody = "# Sample Skill\n\nNo frontmatter here.\n";
+  } else {
+    const skillName = options.skillNameMismatch ? "other-skill" : "sample-skill";
+    const lines = [
+      "---",
+      `name: ${skillName}`,
+      "description: Validate sample fixtures during tests.",
+      "---",
+      "",
+      "# Sample Skill",
+      "",
+    ];
+    if (options.todoPlaceholder) {
+      lines.push("TODO: finish this skill before publishing.");
+      lines.push("");
+    }
+    if (options.machinePath) {
+      lines.push("Read `/Users/example/.codex/config.toml` for credentials.");
+      lines.push("");
+    }
+    skillBody = `${lines.join("\n")}`;
+  }
+
+  await writeFile(path.join(skillRoot, "SKILL.md"), skillBody);
+  if (!options.omitUiMetadata) {
+    await writeFile(
+      path.join(skillRoot, "agents", "openai.yaml"),
+      "interface:\n  display_name: \"Sample Skill\"\n  short_description: \"Validate sample plugin fixtures\"\n  default_prompt: \"Use $sample-skill to validate this fixture.\"\n",
+    );
+  }
   return root;
 }
 
@@ -64,4 +95,31 @@ test("rejects duplicate entries and manifest name drift", async () => {
   const codes = new Set(result.errors.map((error) => error.code));
   assert.ok(codes.has("duplicate-marketplace-plugin"));
   assert.ok(codes.has("plugin-name-mismatch"));
+});
+
+test("rejects missing skill frontmatter", async () => {
+  const result = await validateTarget(await createFixture({ missingFrontmatter: true }));
+  const codes = new Set(result.errors.map((error) => error.code));
+  assert.ok(codes.has("missing-skill-frontmatter"));
+});
+
+test("rejects skill name mismatch, TODO placeholders, and machine paths", async () => {
+  const result = await validateTarget(
+    await createFixture({
+      skillNameMismatch: true,
+      todoPlaceholder: true,
+      machinePath: true,
+    }),
+  );
+  const codes = new Set(result.errors.map((error) => error.code));
+  assert.ok(codes.has("skill-name-mismatch"));
+  assert.ok(codes.has("skill-placeholder"));
+  assert.ok(codes.has("machine-specific-path"));
+});
+
+test("warns when skill UI metadata is missing", async () => {
+  const result = await validateTarget(await createFixture({ omitUiMetadata: true }));
+  assert.deepEqual(result.errors, []);
+  const codes = new Set(result.warnings.map((warning) => warning.code));
+  assert.ok(codes.has("missing-skill-ui-metadata"));
 });
