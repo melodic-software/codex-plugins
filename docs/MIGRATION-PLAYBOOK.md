@@ -203,3 +203,34 @@ may be ported in either direction using this playbook, but no repository is
 generated from another at install time and no automatic synchronization is
 introduced. Shared concepts stay conceptual; native packaging and runtime
 contracts stay local to their host.
+
+### Evaluation carve-out: parallel packaging for assessment
+
+The packaging-locality sentence above has exactly one exception, and nothing
+wider. A deliberate, hand-built, time-boxed parallel package set MAY be
+produced in a separate evaluation repository to assess a cross-host packaging
+format, when all of the following hold:
+
+- every existing host repository remains the source of truth for its host and
+  keeps its own manifests, releases, tests, and native adapters;
+- every native marketplace catalog is retained, because a format that defines
+  no catalog or listing format does not replace one;
+- the parallel set is built by hand and reviewed by a human, never emitted by
+  a tool that reads one repository and writes another; and
+- the evaluation has a written end date and a named owner who reports the
+  outcome.
+
+Both prohibitions above continue to apply, to the evaluation set as much as to
+anything else: no repository is generated from another at install time, no
+automatic synchronization is introduced, and no host loads another host's
+packages at run time.
+
+This carve-out authorizes assessment only. It does not authorize retiring a
+host repository, merging host-specific content, collapsing plugins that share
+a skill name across hosts, or dropping a native catalog. Retiring a host
+repository is a separate decision and needs its own amendment, resting on
+evidence that does not exist yet: the section 8 matrix exercised per skill
+with the evidence published per section 9, and every mapped trigger verified
+by invocation from a clean consumer repository. A package that loads is not a
+package at parity; section 9 already forbids claiming parity for a component
+that was dropped, replaced, or remains untested.
