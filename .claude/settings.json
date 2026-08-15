@@ -1,5 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "extraKnownMarketplaces": {
+    "melodic-software": {
+      "source": {
+        "source": "github",
+        "repo": "melodic-software/claude-code-plugins"
+      },
+      "autoUpdate": true
+    }
+  },
   "enabledPlugins": {
     "actionlint@melodic-software": true,
     "adhd@melodic-software": true,
@@ -67,13 +76,17 @@
     "work-items@melodic-software": true,
     "x@melodic-software": true
   },
-  "extraKnownMarketplaces": {
-    "melodic-software": {
-      "source": {
-        "source": "github",
-        "repo": "melodic-software/claude-code-plugins"
-      },
-      "autoUpdate": true
-    }
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/install-plugins.sh\""
+          }
+        ]
+      }
+    ]
   }
 }
