@@ -22,10 +22,13 @@ test("the marketplace exposes the Scheduled tasks plugin", async () => {
     category: "Productivity",
   });
   assert.equal(manifest.name, "scheduled-tasks");
+  assert.equal(manifest.version, "0.1.0");
   assert.equal(manifest.skills, "./skills/");
+  assert.equal(manifest.interface.category, "Productivity");
   assert.deepEqual(manifest.interface.capabilities, ["Read", "Write"]);
-  assert.equal("mcpServers" in manifest, false);
-  assert.equal("apps" in manifest, false);
+  for (const field of ["mcpServers", "apps", "hooks"]) {
+    assert.equal(field in manifest, false);
+  }
 });
 
 test("the skill refreshes current docs and discovers native tools", async () => {
