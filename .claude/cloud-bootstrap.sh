@@ -8,6 +8,9 @@
 #   2. The SessionStart hook (startup|resume), as per-session drift repair —
 #      the environment cache can be ~7 days stale. Plugins installed from
 #      this path go live at the next resume, not in the current session.
+# Guard contract (verified 2026-08-15): the session VM carries
+# CLAUDE_CODE_REMOTE=true and it is never "true" locally, per
+# https://code.claude.com/docs/en/cloud-environments#setup-scripts-vs-sessionstart-hooks
 # Declaring a marketplace is gated on workspace trust and cloud sessions arrive
 # untrusted, so the declaration alone can load nothing there. Hooks run untrusted.
 # Idempotent and best effort: a failed plugin costs its skills, not the session.
