@@ -106,3 +106,20 @@ test("repository-owned Markdown pointers resolve", async () => {
     }
   }
 });
+
+test("the capability cheat sheet lists every marketplace plugin", async () => {
+  const [cheatSheet, marketplaceRaw] = await Promise.all([
+    read("docs/CODEX-CAPABILITY-CHEAT-SHEET.md"),
+    read(".agents/plugins/marketplace.json"),
+  ]);
+  const marketplace = JSON.parse(marketplaceRaw);
+
+  const marketplaceSection = cheatSheet.split("## This marketplace")[1] ?? "";
+  assert.ok(marketplaceSection.length > 0, "cheat sheet must include This marketplace");
+  for (const { name } of marketplace.plugins) {
+    assert.ok(
+      marketplaceSection.includes(`\`${name}\``),
+      `cheat sheet marketplace table missing plugin ${name}`,
+    );
+  }
+});

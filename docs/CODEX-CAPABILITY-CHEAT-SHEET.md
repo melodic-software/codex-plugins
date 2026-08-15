@@ -97,6 +97,8 @@ not OpenAI built-ins.
 | --- | --- |
 | `plugin-ops` | `$plugin-ops:install-marketplace`, `$plugin-ops:update-plugins`, `$plugin-ops:verify-plugin`, `$plugin-ops:migrate-plugin` |
 | `codex-operations` | `$codex-operations:coordinate-codex-work`, `$codex-operations:find-skill-candidates` |
+| `scheduled-tasks` | `$scheduled-tasks:manage-scheduled-tasks` |
+| `humanize` | `$humanize:humanize` |
 
 ## Keep the snapshot current
 
