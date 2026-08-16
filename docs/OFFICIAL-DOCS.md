@@ -35,8 +35,12 @@ as a pointer for compatibility review only unless repository policy changes.
 
 ## Normative ecosystem contracts
 
-Use these when a component relies on the corresponding open standard:
+Use these when a component relies on the corresponding open standard. Agent
+Plugins is the packaging contract that compatible clients load; Agent Skills and
+the Model Context Protocol are the separate component contracts it packages, and
+reading one does not cover a claim that rests on another:
 
+- [Agent Plugins specification](https://agent-plugins.org/specification)
 - [Agent Skills specification](https://agentskills.io/specification)
 - [Model Context Protocol specification](https://modelcontextprotocol.io/specification/latest)
 
@@ -56,8 +60,8 @@ contract. Treat examples as evidence, not templates to copy blindly:
 Read the current official source-host documentation for every migrated
 component and record the exact pages in the migration pull request:
 
-- [Claude Code documentation](https://docs.claude.com/en/docs/claude-code/overview)
-- [Claude Code plugins](https://docs.claude.com/en/docs/claude-code/plugins)
+- [Claude Code documentation](https://code.claude.com/docs/en/overview)
+- [Claude Code plugins](https://code.claude.com/docs/en/plugins)
 - [Cursor documentation](https://cursor.com/docs)
 - [Cursor plugins](https://cursor.com/docs/plugins)
 
