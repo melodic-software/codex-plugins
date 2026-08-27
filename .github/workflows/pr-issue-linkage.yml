@@ -18,8 +18,17 @@ concurrency:
 
 jobs:
   pr-issue-linkage:
+    # Job-level permissions replace the workflow-level block outright, so both
+    # scopes the reusable declares are listed here: pull-requests: read to read
+    # the PR body it validates, and actions: read for its
+    # cancelled-versus-timed_out prerequisite resolver. A reusable cannot
+    # elevate caller permissions, and GitHub rejects it at startup when the
+    # caller grants a stricter set — the required context then never
+    # materializes at all, rather than reporting red. Standards' runner-policy
+    # records the same pair as this ref's `minimumCallerPermissions`.
     permissions:
       pull-requests: read
-    uses: melodic-software/ci-workflows/.github/workflows/pr-issue-linkage.yml@c136b27f404dd32ce3873f39a6f3443891d1c16e # c136b27 2026-07-27 v0.9.1
+      actions: read
+    uses: melodic-software/ci-workflows/.github/workflows/pr-issue-linkage.yml@7107b34832a7b6db5d08d3b132621c599fbe5e50 # 7107b34 2026-08-13 v0.14.2
     with:
       runner: ubuntu-24.04
