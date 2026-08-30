@@ -19,9 +19,7 @@ MAX_EXCERPT_CHARS = 500
 MAX_TEXT_CHARS_PER_RECORD = 2000
 
 SKILL_PATTERN = re.compile(r"\$[a-z0-9][a-z0-9-]{1,63}\b")
-SKILL_WORD_PATTERN = re.compile(
-    r"\b(skill|skills|SKILL\.md|agents[/\\]skills)\b", re.IGNORECASE
-)
+SKILL_WORD_PATTERN = re.compile(r"\bskills?\b", re.IGNORECASE)
 FRICTION_PATTERN = re.compile(
     r"\b(failed|error|blocked|confusing|unclear|struggl(?:e|ed|ing)|"
     r"workaround|manual|again|repeated|often|candidate|missed trigger|"
@@ -146,7 +144,7 @@ def parse_timestamp(value: Any) -> dt.datetime | None:
     return parsed.astimezone(dt.UTC)
 
 
-def iter_candidate_files(root: Path, since: dt.datetime) -> Iterable[Path]:
+def iter_candidate_files(root: Path, since: dt.datetime) -> list[Path]:
     if not root.exists():
         return []
     cutoff = since.timestamp()
@@ -162,12 +160,15 @@ def iter_candidate_files(root: Path, since: dt.datetime) -> Iterable[Path]:
 
 def safe_text(value: Any) -> str:
     chunks: list[str] = []
+    joined_length = 0
 
     def walk(node: Any) -> None:
-        if len(" ".join(chunks)) >= MAX_TEXT_CHARS_PER_RECORD:
+        nonlocal joined_length
+        if joined_length >= MAX_TEXT_CHARS_PER_RECORD:
             return
         if isinstance(node, str):
             if node and not node.startswith("data:image/"):
+                joined_length += len(node) + (1 if chunks else 0)
                 chunks.append(node)
             return
         if isinstance(node, list):
@@ -252,7 +253,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     now = dt.datetime.now(dt.UTC)
     since = now - dt.timedelta(hours=args.hours)
-    files = list(iter_candidate_files(args.sessions_dir, since))
+    files = iter_candidate_files(args.sessions_dir, since)
 
     scanned_records = 0
     included_records = 0
@@ -301,7 +302,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 matches = {
                     match
                     for match in SKILL_PATTERN.findall(text)
-                    if match.lower() not in IGNORED_DOLLAR_NAMES
+                    if match not in IGNORED_DOLLAR_NAMES
                 }
                 for match in matches:
                     skill_mentions[match] += 1
