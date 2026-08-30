@@ -29,6 +29,9 @@ installed copies must change.
    codex plugin add <plugin>@<marketplace>
    ```
 
+   `codex plugin add <plugin> --marketplace <marketplace>` selects the same
+   plugin. Prefer the `@` form so the source is visible in the command itself.
+
 5. For a local plugin under active development, use the built-in
    `$plugin-creator` cachebuster/reinstall workflow. Do not increment release
    versions or hand-edit marketplace configuration merely to invalidate cache.

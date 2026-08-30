@@ -120,8 +120,11 @@ to preserve the source file shape.
 ## 6. Rebuild natively
 
 Use `$plugin-creator` for the target package and `$skill-creator` for each
-skill. Use the installed `$migrate-plugin` component map as a checklist, then
-override it when current official documentation differs.
+skill; those are built-in system skills, so they take the bare `$name` form. Use
+the installed `$plugin-ops:migrate-plugin` component map as a checklist, then
+override it when current official documentation differs. Skills that ship inside
+a plugin are loaded under that plugin's namespace, so they are invoked as
+`$plugin-name:skill-name`.
 
 During implementation:
 

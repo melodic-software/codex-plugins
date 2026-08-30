@@ -1,13 +1,22 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertMarketplacePlugin, compact, once, read, skillPaths } from "./helpers.mjs";
+import {
+  assertMarketplacePlugin,
+  once,
+  readSkillContract,
+  skillPaths,
+} from "./helpers.mjs";
 
 const paths = skillPaths("scheduled-tasks");
-const skillPath = paths.md("manage-scheduled-tasks");
 
 // All four body tests assert against the same whitespace-collapsed skill, so
-// read and collapse it once.
-const manageSkill = once(async () => compact(await read(skillPath)));
+// read it once. `readSkillContract` also pins the SKILL.md frontmatter name and
+// the `display_name`/`default_prompt` pair in `agents/openai.yaml`, which this
+// suite alone used to skip.
+const contract = once(() =>
+  readSkillContract(paths, "manage-scheduled-tasks", "Manage Scheduled Tasks"),
+);
+const manageSkill = async () => (await contract()).compactSkill;
 
 test("the marketplace exposes the Scheduled tasks plugin", async () => {
   await assertMarketplacePlugin({
@@ -40,7 +49,7 @@ test("direct and indirect requests share one focused management workflow", async
     "Pause or resume",
     "Delete",
   ]) {
-    assert.match(skill, new RegExp(`\\*\\*${operation}:\\*\\*`));
+    assert.match(skill, new RegExp(`\\*\\*${operation}:\\*\\*`, "u"));
   }
   assert.match(skill, /scheduled task inside the current chat/u);
   assert.match(skill, /standalone scheduled task/u);

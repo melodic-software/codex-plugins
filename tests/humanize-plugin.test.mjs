@@ -29,6 +29,19 @@ const rubricText = once(() => read(rubricPath));
 const evaluationCases = once(() => readJson(casesPath));
 const execution = once(() => readJson(resultsPath));
 
+// Two tests need the recorded results keyed by id. Build the map once, here,
+// including the duplicate-id check that makes keying by id mean anything: a
+// bare `new Map(results.map(…))` silently keeps the last of a duplicated pair
+// instead of failing, so the check has to live with the construction.
+const recordedById = once(async () => {
+  const byId = new Map();
+  for (const result of (await execution()).results) {
+    assert.equal(byId.has(result.id), false, `duplicate result ${result.id}`);
+    byId.set(result.id, result);
+  }
+  return byId;
+});
+
 test("the marketplace exposes the Humanize plugin", async () => {
   await assertMarketplacePlugin({
     name: "humanize",
@@ -38,12 +51,13 @@ test("the marketplace exposes the Humanize plugin", async () => {
 });
 
 test("skill metadata and references are complete", async () => {
-  const { skill, metadata } = await readSkillContract(paths, "humanize");
+  // `readSkillContract` pins the frontmatter name, the default prompt, and
+  // `display_name: "Humanize"`.
+  const { skill } = await readSkillContract(paths, "humanize", "Humanize");
 
   assert.match(skill, /text-bearing files/u);
   assert.match(skill, /Do not use for a pure authorship-classification request/u);
   assert.match(skill, /references\/revision-rubric\.md/u);
-  assert.match(metadata, /display_name: "Humanize"/u);
   await assertExists(rubricPath);
 });
 
@@ -74,7 +88,7 @@ test("the workflow protects content and legitimate voice", async () => {
   for (const phrase of [
     "factual claims, the writer's intended position",
     "quotations, citations, links, terminology",
-    "do not invent anecdotes",
+    "Do not invent anecdotes",
     "Preserve clearly framed personal or organizational opinion",
     "Do not infer that a claim is unsupported merely because no source was supplied",
     "Preserve substantive fact-like, causal, quantitative, and significance claims",
@@ -89,7 +103,10 @@ test("the workflow protects content and legitimate voice", async () => {
     "Do not add typos",
     "report an AI probability",
   ]) {
-    assert.match(skill, new RegExp(phrase, "iu"));
+    // Same escaping policy as the phrase list above: matched literally, and
+    // case-sensitively, since SKILL.md is digest-pinned and its casing cannot
+    // drift underneath these without the digest test firing first.
+    assert.match(skill, new RegExp(escapeRegExp(phrase), "u"));
   }
 });
 
@@ -162,13 +179,15 @@ test("the behavioral evaluation set covers activation and invariant cases", asyn
 });
 
 test("recorded fresh-agent and installed-plugin evaluations satisfy their contracts", async () => {
-  const [cases, results] = await Promise.all([evaluationCases(), execution()]);
+  const [cases, results, resultsById] = await Promise.all([
+    evaluationCases(),
+    execution(),
+    recordedById(),
+  ]);
   assert.equal(results.executedAt, "2026-08-05");
 
   const casesById = new Map(cases.map((evaluation) => [evaluation.id, evaluation]));
-  const resultsById = new Map();
   for (const result of results.results) {
-    assert.equal(resultsById.has(result.id), false, `duplicate result ${result.id}`);
     assert.ok(casesById.has(result.id), `result without case ${result.id}`);
     assert.ok(["revision", "clarification", "classification-response", "decision", "operation"].includes(result.resultType));
     assert.equal(typeof result.taskRef, "string");
@@ -176,7 +195,6 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
     assert.equal(typeof result.surface, "string");
     assert.equal(typeof result.output, "string");
     assert.ok(result.output.length > 0);
-    resultsById.set(result.id, result);
 
     const evaluation = casesById.get(result.id);
     const input = [evaluation.request, evaluation.context ?? "", evaluation.artifact].join("\n");
@@ -213,10 +231,24 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
 
   const evidence = results.operationalEvidence;
   assert.match(evidence.seedCommit, /^[0-9a-f]{40}$/u);
-  assert.deepEqual(evidence.taskRefs, [
-    "/root/forward_operational_files",
-    "/root/forward_operational_context",
-  ]);
+
+  // What this protects is that the operational evidence came from exactly these
+  // two runs, in this order. The recording host's home directory is not part of
+  // that: freezing `/root/…` here pins a foreign machine's layout, which is the
+  // opposite of the `machine-agnostic` rule AGENTS.md states and
+  // documentation-contract.test.mjs enforces. Pin the run names and the count,
+  // anchored at a path boundary and at the end, and let the prefix vary.
+  assert.equal(evidence.taskRefs.length, 2);
+  for (const [index, run] of [
+    "forward_operational_files",
+    "forward_operational_context",
+  ].entries()) {
+    assert.match(
+      evidence.taskRefs[index],
+      new RegExp(`(?:^|/)${escapeRegExp(run)}$`, "u"),
+      `operational task reference ${index} must name the ${run} run`,
+    );
+  }
   assert.deepEqual(evidence.postconditions.trackedModified, [
     "a.md",
     "docs/note.md",
@@ -269,8 +301,7 @@ test("recorded evaluations are bound to the skill they were produced against", a
 });
 
 test("each operational evaluation is scoped to the files its own request names", async () => {
-  const results = await execution();
-  const resultsById = new Map(results.results.map((result) => [result.id, result]));
+  const [results, resultsById] = await Promise.all([execution(), recordedById()]);
 
   // The six operational scenarios were driven as two batched task runs, so
   // each recorded `output` is the whole batch's report. `mustMention` alone

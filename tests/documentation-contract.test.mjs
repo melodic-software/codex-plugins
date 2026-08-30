@@ -30,7 +30,14 @@ const requiredOfficialPointers = [
 test("the upstream index retains every required live OpenAI pointer", async () => {
   const sourceMap = await read("docs/OFFICIAL-DOCS.md");
   for (const pointer of requiredOfficialPointers) {
-    assert.match(sourceMap, new RegExp(escapeRegExp(pointer)));
+    // Anchored on the Markdown link syntax each pointer actually appears in,
+    // `](URL)`, so the closing paren pins the end of the URL. A bare substring
+    // match let `…/build/skills` pass against a link to `…/build/skillsX`.
+    assert.match(
+      sourceMap,
+      new RegExp(`\\]\\(${escapeRegExp(pointer)}\\)`, "u"),
+      `docs/OFFICIAL-DOCS.md must link exactly ${pointer}`,
+    );
   }
   assert.match(sourceMap, /not a cached specification/u);
   assert.match(sourceMap, /record the URLs and verification date/u);

@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Collect bounded, redacted evidence from recent Codex session JSONL files."""
+"""Collect bounded, redacted evidence from recent Codex session JSONL files.
+
+Requires Python 3.11 or newer: this script uses ``datetime.UTC``, which was
+added in 3.11.
+"""
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import re
 import sys
@@ -20,9 +25,11 @@ MAX_TEXT_CHARS_PER_RECORD = 2000
 
 SKILL_PATTERN = re.compile(r"\$[a-z0-9][a-z0-9-]{1,63}\b")
 SKILL_WORD_PATTERN = re.compile(r"\bskills?\b", re.IGNORECASE)
+# Friction words carry difficulty; bare frequency words ("often", "repeated")
+# belong to WORKFLOW_PATTERN so a record cannot count toward both summaries.
 FRICTION_PATTERN = re.compile(
     r"\b(failed|error|blocked|confusing|unclear|struggl(?:e|ed|ing)|"
-    r"workaround|manual|again|repeated|often|candidate|missed trigger|"
+    r"workaround|manual|again|candidate|missed trigger|"
     r"more helpful|not useful|doesn't trigger|did not trigger)\b",
     re.IGNORECASE,
 )
@@ -123,8 +130,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.hours <= 0:
         parser.error("--hours must be greater than zero")
+    if not math.isfinite(args.hours):
+        parser.error("--hours must be a finite number")
     if args.max_excerpts < 0:
         parser.error("--max-excerpts must be zero or greater")
+    try:
+        args.since = dt.datetime.now(dt.UTC) - dt.timedelta(hours=args.hours)
+    except (OverflowError, ValueError):
+        parser.error("--hours is too large to form a lookback window")
     args.skills_dir = unique_paths(args.skills_dir or default_skill_roots())
     return args
 
@@ -242,17 +255,12 @@ def read_skill_metadata(skill_roots: Iterable[Path]) -> list[tuple[str, str]]:
     return sorted(skills.items())
 
 
-def markdown_escape(text: str) -> str:
-    return text.replace("|", "\\|")
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     reconfigure = getattr(sys.stdout, "reconfigure", None)
     if reconfigure is not None:
         reconfigure(encoding="utf-8", errors="replace")
     args = parse_args(argv)
-    now = dt.datetime.now(dt.UTC)
-    since = now - dt.timedelta(hours=args.hours)
+    since = args.since
     files = iter_candidate_files(args.sessions_dir, since)
 
     scanned_records = 0
@@ -369,11 +377,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"- Friction-related records: {signal_counts['friction']}")
     print(f"- Reusable-workflow records: {signal_counts['workflow']}")
     if skill_mentions:
+        ranked_mentions = sorted(
+            skill_mentions.items(), key=lambda item: (-item[1], item[0])
+        )[:20]
         print(
             "- Skill mentions: "
-            + ", ".join(
-                f"`{name}` ({count})" for name, count in skill_mentions.most_common(20)
-            )
+            + ", ".join(f"`{name}` ({count})" for name, count in ranked_mentions)
         )
     else:
         print("- Skill mentions: none")
@@ -392,10 +401,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("## Bounded Redacted Excerpts")
     if excerpts:
         for timestamp, session, labels, excerpt in excerpts:
-            print(
-                f"- `{timestamp}` `{session}` [{labels}] "
-                f"{markdown_escape(excerpt)}"
-            )
+            print(f"- `{timestamp}` `{session}` [{labels}] {excerpt}")
     else:
         print("- No relevant excerpts found.")
 

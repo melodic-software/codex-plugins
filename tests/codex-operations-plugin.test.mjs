@@ -21,6 +21,7 @@ test("coordinate-codex-work enforces authority, context, and smallest units", as
   const { skill, compactSkill } = await readSkillContract(
     paths,
     "coordinate-codex-work",
+    "Coordinate Codex Work",
   );
 
   assert.match(compactSkill, /active `AGENTS\.md` hierarchy/u);
@@ -42,6 +43,7 @@ test("find-skill-candidates stays recommendation-only with bounded collection", 
   const { compactSkill } = await readSkillContract(
     paths,
     "find-skill-candidates",
+    "Find Skill Candidates",
   );
 
   assert.match(compactSkill, /recommendation-only/u);

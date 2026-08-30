@@ -68,12 +68,17 @@ export const assertMarketplacePlugin = async ({ name, version, category }) => {
 };
 
 /**
- * Reads a skill body plus its Codex metadata and asserts the two facts every
- * skill test repeated: SKILL.md frontmatter opens with this skill's name, and
- * openai.yaml aims its default prompt at the same name. Returns the raw body,
- * the raw metadata, and the whitespace-collapsed body for further assertions.
+ * Reads a skill body plus its Codex metadata and asserts the three facts every
+ * skill test should repeat: SKILL.md frontmatter opens with this skill's name,
+ * openai.yaml aims its default prompt at the same name, and openai.yaml
+ * publishes the expected `display_name`. Returns the raw body, the raw
+ * metadata, and the whitespace-collapsed body for further assertions.
+ *
+ * `displayName` is required rather than optional so a new skill test cannot
+ * quietly reintroduce the asymmetry this closed, where only one of the eight
+ * skills pinned the name Codex actually shows users.
  */
-export const readSkillContract = async (paths, name) => {
+export const readSkillContract = async (paths, name, displayName) => {
   const [skill, metadata] = await Promise.all([
     read(paths.md(name)),
     read(paths.yaml(name)),
@@ -81,6 +86,11 @@ export const readSkillContract = async (paths, name) => {
 
   assert.match(skill, new RegExp(`^---\\s+name: ${name}\\s+description:`, "u"));
   assert.match(metadata, new RegExp(`default_prompt: "Use \\$${name}`, "u"));
+  assert.match(
+    metadata,
+    new RegExp(`display_name: "${escapeRegExp(displayName)}"`, "u"),
+    `${name} must publish display_name "${displayName}"`,
+  );
 
   return { skill, metadata, compactSkill: compact(skill) };
 };

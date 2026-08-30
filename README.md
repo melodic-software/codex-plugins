@@ -36,7 +36,9 @@ Dogfoods the marketplace by providing skills to:
 - validate catalogs, manifests, skills, and portable path contracts; and
 - translate Claude Code or Cursor plugins into Codex-native packages.
 
-`codex-operations` provides portable skills to:
+### `codex-operations`
+
+Provides portable skills to:
 
 - coordinate multi-task, multi-agent, and long-running Codex work; and
 - find evidence-backed opportunities for reusable skills from bounded local
