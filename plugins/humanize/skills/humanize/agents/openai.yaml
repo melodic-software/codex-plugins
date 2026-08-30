@@ -1,4 +1,4 @@
 interface:
   display_name: "Humanize"
   short_description: "Revise prose for natural, context-aware voice"
-  default_prompt: "Use $humanize to revise this writing while preserving its meaning, evidence, and voice."
+  default_prompt: "Use $humanize:humanize to revise this writing while preserving its meaning, evidence, and voice."

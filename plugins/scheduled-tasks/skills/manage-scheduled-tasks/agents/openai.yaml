@@ -1,4 +1,4 @@
 interface:
   display_name: "Manage Scheduled Tasks"
   short_description: "Create and manage native Scheduled tasks"
-  default_prompt: "Use $manage-scheduled-tasks to list my Scheduled tasks and help me update one."
+  default_prompt: "Use $scheduled-tasks:manage-scheduled-tasks to list my Scheduled tasks and help me update one."

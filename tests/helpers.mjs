@@ -32,6 +32,7 @@ export const assertExists = (path) =>
 export const skillPaths = (plugin) => {
   const root = (skill) => `plugins/${plugin}/skills/${skill}`;
   return {
+    plugin,
     root,
     md: (skill) => `${root(skill)}/SKILL.md`,
     yaml: (skill) => `${root(skill)}/agents/openai.yaml`,
@@ -85,7 +86,16 @@ export const readSkillContract = async (paths, name, displayName) => {
   ]);
 
   assert.match(skill, new RegExp(`^---\\s+name: ${name}\\s+description:`, "u"));
-  assert.match(metadata, new RegExp(`default_prompt: "Use \\$${name}`, "u"));
+  // Codex qualifies a plugin-provided skill's name with its plugin namespace
+  // (`plugin:skill`) and resolves an explicit mention against that qualified
+  // name only, with no base-name alias. `default_prompt` is stored verbatim and
+  // never rewritten, so a bare `$skill` in it names a mention that cannot
+  // resolve. Pinning the qualified form here keeps that drift from returning.
+  assert.match(
+    metadata,
+    new RegExp(`default_prompt: "Use \\$${paths.plugin}:${name}`, "u"),
+    `${name} must seed the qualified mention $${paths.plugin}:${name}`,
+  );
   assert.match(
     metadata,
     new RegExp(`display_name: "${escapeRegExp(displayName)}"`, "u"),
