@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { escapeRegExp, read } from "./helpers.mjs";
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+// These assertions deliberately run against the raw file, never `compact`:
+// they must break on a line wrap, unlike the plugin-skill assertions.
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const requiredOfficialPointers = [
@@ -28,7 +30,7 @@ const requiredOfficialPointers = [
 test("the upstream index retains every required live OpenAI pointer", async () => {
   const sourceMap = await read("docs/OFFICIAL-DOCS.md");
   for (const pointer of requiredOfficialPointers) {
-    assert.match(sourceMap, new RegExp(pointer.replaceAll(".", "\\.")));
+    assert.match(sourceMap, new RegExp(escapeRegExp(pointer)));
   }
   assert.match(sourceMap, /not a cached specification/u);
   assert.match(sourceMap, /record the URLs and verification date/u);
@@ -41,7 +43,7 @@ test("AGENTS enforces the documentation, context, architecture, and validation g
     "docs/PLUGIN-PHILOSOPHY.md",
     "docs/MIGRATION-PLAYBOOK.md",
   ]) {
-    assert.match(agents, new RegExp(path.replaceAll(".", "\\.")));
+    assert.match(agents, new RegExp(escapeRegExp(path)));
   }
   for (const requirement of [
     /Mandatory documentation preflight/u,
@@ -70,7 +72,7 @@ test("philosophy and migration remain one consistent design contract", async () 
     "## Coupling, cohesion, and encapsulation",
     "## Release gates",
   ]) {
-    assert.match(philosophy, new RegExp(heading.replaceAll("*", "\\*")));
+    assert.match(philosophy, new RegExp(escapeRegExp(heading)));
   }
 
   for (const requirement of [

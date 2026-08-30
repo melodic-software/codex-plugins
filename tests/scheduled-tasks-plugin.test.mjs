@@ -1,38 +1,24 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { assertMarketplacePlugin, compact, once, read, skillPaths } from "./helpers.mjs";
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
-const readJson = async (path) => JSON.parse(await read(path));
-const compact = (text) => text.replace(/\s+/gu, " ");
-const skillPath =
-  "plugins/scheduled-tasks/skills/manage-scheduled-tasks/SKILL.md";
+const paths = skillPaths("scheduled-tasks");
+const skillPath = paths.md("manage-scheduled-tasks");
+
+// All four body tests assert against the same whitespace-collapsed skill, so
+// read and collapse it once.
+const manageSkill = once(async () => compact(await read(skillPath)));
 
 test("the marketplace exposes the Scheduled tasks plugin", async () => {
-  const [marketplace, manifest] = await Promise.all([
-    readJson(".agents/plugins/marketplace.json"),
-    readJson("plugins/scheduled-tasks/.codex-plugin/plugin.json"),
-  ]);
-
-  const entry = marketplace.plugins.find(({ name }) => name === "scheduled-tasks");
-  assert.deepEqual(entry, {
+  await assertMarketplacePlugin({
     name: "scheduled-tasks",
-    source: { source: "local", path: "./plugins/scheduled-tasks" },
-    policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+    version: "0.1.0",
     category: "Productivity",
   });
-  assert.equal(manifest.name, "scheduled-tasks");
-  assert.equal(manifest.version, "0.1.0");
-  assert.equal(manifest.skills, "./skills/");
-  assert.equal(manifest.interface.category, "Productivity");
-  assert.deepEqual(manifest.interface.capabilities, ["Read", "Write"]);
-  for (const field of ["mcpServers", "apps", "hooks"]) {
-    assert.equal(field in manifest, false);
-  }
 });
 
 test("the skill refreshes current docs and discovers native tools", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   assert.match(skill, /Complete this preflight on every invocation/u);
   assert.match(skill, /https:\/\/learn\.chatgpt\.com\/docs\/automations/u);
@@ -43,7 +29,7 @@ test("the skill refreshes current docs and discovers native tools", async () => 
 });
 
 test("direct and indirect requests share one focused management workflow", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   for (const operation of [
     "Explain or recommend",
@@ -62,7 +48,7 @@ test("direct and indirect requests share one focused management workflow", async
 });
 
 test("missing capabilities fail safely without a second scheduler", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   assert.match(skill, /If no native Scheduled management capability is available/u);
   assert.match(skill, /provide read-only guidance/u);
@@ -73,7 +59,7 @@ test("missing capabilities fail safely without a second scheduler", async () => 
 });
 
 test("repository context and unattended permissions constrain execution", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   assert.match(skill, /active `AGENTS\.md` chain/u);
   assert.match(skill, /only the relevant repository evidence/u);
