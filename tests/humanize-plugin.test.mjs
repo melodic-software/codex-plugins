@@ -1,55 +1,68 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, readFile } from "node:fs/promises";
 import { test } from "node:test";
+import {
+  assertExists,
+  assertMarketplacePlugin,
+  compact,
+  escapeRegExp,
+  once,
+  read,
+  readJson,
+  readSkillContract,
+  skillPaths,
+} from "./helpers.mjs";
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
-const readJson = async (path) => JSON.parse(await read(path));
-const compact = (text) => text.replace(/\s+/gu, " ");
-const skillPath = "plugins/humanize/skills/humanize/SKILL.md";
-const rubricPath =
-  "plugins/humanize/skills/humanize/references/revision-rubric.md";
+const paths = skillPaths("humanize");
+// These two strings are also the keys of `implementationDigest` in the recorded
+// results fixture, so they must stay byte-for-byte what that file records.
+const skillPath = paths.md("humanize");
+const rubricPath = paths.file("humanize", "references/revision-rubric.md");
+const casesPath = "tests/fixtures/humanize-evaluation-cases.json";
+const resultsPath = "tests/fixtures/humanize-evaluation-results.json";
+
+// Several tests read each of these; load and parse each one once. Nothing below
+// mutates the loaded values.
+const skillText = once(() => read(skillPath));
+const compactSkill = once(async () => compact(await skillText()));
+const rubricText = once(() => read(rubricPath));
+const evaluationCases = once(() => readJson(casesPath));
+const execution = once(() => readJson(resultsPath));
+
+// Two tests need the recorded results keyed by id. Build the map once, here,
+// including the duplicate-id check that makes keying by id mean anything: a
+// bare `new Map(results.map(…))` silently keeps the last of a duplicated pair
+// instead of failing, so the check has to live with the construction.
+const recordedById = once(async () => {
+  const byId = new Map();
+  for (const result of (await execution()).results) {
+    assert.equal(byId.has(result.id), false, `duplicate result ${result.id}`);
+    byId.set(result.id, result);
+  }
+  return byId;
+});
 
 test("the marketplace exposes the Humanize plugin", async () => {
-  const [marketplace, manifest] = await Promise.all([
-    readJson(".agents/plugins/marketplace.json"),
-    readJson("plugins/humanize/.codex-plugin/plugin.json"),
-  ]);
-
-  const entry = marketplace.plugins.find(({ name }) => name === "humanize");
-  assert.deepEqual(entry, {
+  await assertMarketplacePlugin({
     name: "humanize",
-    source: { source: "local", path: "./plugins/humanize" },
-    policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+    version: "0.1.0",
     category: "Productivity",
   });
-  assert.equal(manifest.name, "humanize");
-  assert.equal(manifest.version, "0.1.0");
-  assert.equal(manifest.skills, "./skills/");
-  assert.equal(manifest.interface.category, "Productivity");
-  assert.deepEqual(manifest.interface.capabilities, ["Read", "Write"]);
-  for (const field of ["mcpServers", "apps", "hooks"]) {
-    assert.equal(field in manifest, false);
-  }
 });
 
 test("skill metadata and references are complete", async () => {
-  const [skill, metadata] = await Promise.all([
-    read(skillPath),
-    read("plugins/humanize/skills/humanize/agents/openai.yaml"),
-  ]);
+  // `readSkillContract` pins the frontmatter name, the default prompt, and
+  // `display_name: "Humanize"`.
+  const { skill } = await readSkillContract(paths, "humanize", "Humanize");
 
-  assert.match(skill, /^---\s+name: humanize\s+description:/u);
   assert.match(skill, /text-bearing files/u);
   assert.match(skill, /Do not use for a pure authorship-classification request/u);
   assert.match(skill, /references\/revision-rubric\.md/u);
-  assert.match(metadata, /display_name: "Humanize"/u);
-  assert.match(metadata, /default_prompt: "Use \$humanize/u);
-  await assert.doesNotReject(access(new URL(`../${rubricPath}`, import.meta.url)));
+  await assertExists(rubricPath);
 });
 
 test("context precedence and file modes are explicit", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await compactSkill();
 
   for (const phrase of [
     "explicit request",
@@ -65,17 +78,17 @@ test("context precedence and file modes are explicit", async () => {
     ".humanized-2",
     "format-aware capability",
   ]) {
-    assert.match(skill, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+    assert.match(skill, new RegExp(escapeRegExp(phrase), "u"));
   }
 });
 
 test("the workflow protects content and legitimate voice", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await compactSkill();
 
   for (const phrase of [
     "factual claims, the writer's intended position",
     "quotations, citations, links, terminology",
-    "do not invent anecdotes",
+    "Do not invent anecdotes",
     "Preserve clearly framed personal or organizational opinion",
     "Do not infer that a claim is unsupported merely because no source was supplied",
     "Preserve substantive fact-like, causal, quantitative, and significance claims",
@@ -90,12 +103,15 @@ test("the workflow protects content and legitimate voice", async () => {
     "Do not add typos",
     "report an AI probability",
   ]) {
-    assert.match(skill, new RegExp(phrase, "iu"));
+    // Same escaping policy as the phrase list above: matched literally, and
+    // case-sensitively, since SKILL.md is digest-pinned and its casing cannot
+    // drift underneath these without the digest test firing first.
+    assert.match(skill, new RegExp(escapeRegExp(phrase), "u"));
   }
 });
 
 test("the rubric has stable classes, full domains, and source traceability", async () => {
-  const rubric = compact(await read(rubricPath));
+  const rubric = compact(await rubricText());
 
   for (const className of [
     "Provenance artifact",
@@ -132,7 +148,7 @@ test("the rubric has stable classes, full domains, and source traceability", asy
 });
 
 test("the behavioral evaluation set covers activation and invariant cases", async () => {
-  const cases = await readJson("tests/fixtures/humanize-evaluation-cases.json");
+  const cases = await evaluationCases();
   assert.ok(cases.length >= 9);
 
   const kinds = new Set(cases.map(({ kind }) => kind));
@@ -163,16 +179,15 @@ test("the behavioral evaluation set covers activation and invariant cases", asyn
 });
 
 test("recorded fresh-agent and installed-plugin evaluations satisfy their contracts", async () => {
-  const [cases, execution] = await Promise.all([
-    readJson("tests/fixtures/humanize-evaluation-cases.json"),
-    readJson("tests/fixtures/humanize-evaluation-results.json"),
+  const [cases, results, resultsById] = await Promise.all([
+    evaluationCases(),
+    execution(),
+    recordedById(),
   ]);
-  assert.equal(execution.executedAt, "2026-08-05");
+  assert.equal(results.executedAt, "2026-08-05");
 
   const casesById = new Map(cases.map((evaluation) => [evaluation.id, evaluation]));
-  const resultsById = new Map();
-  for (const result of execution.results) {
-    assert.equal(resultsById.has(result.id), false, `duplicate result ${result.id}`);
+  for (const result of results.results) {
     assert.ok(casesById.has(result.id), `result without case ${result.id}`);
     assert.ok(["revision", "clarification", "classification-response", "decision", "operation"].includes(result.resultType));
     assert.equal(typeof result.taskRef, "string");
@@ -180,7 +195,6 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
     assert.equal(typeof result.surface, "string");
     assert.equal(typeof result.output, "string");
     assert.ok(result.output.length > 0);
-    resultsById.set(result.id, result);
 
     const evaluation = casesById.get(result.id);
     const input = [evaluation.request, evaluation.context ?? "", evaluation.artifact].join("\n");
@@ -188,19 +202,19 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
     assert.equal(result.inputDigest, digest, `stale recorded input for ${result.id}`);
     if (result.resultType === "revision") {
       for (const invariant of evaluation.mustPreserve ?? []) {
-        assert.match(result.output, new RegExp(invariant.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"));
+        assert.match(result.output, new RegExp(escapeRegExp(invariant), "iu"));
       }
       for (const forbidden of [
         ...(evaluation.mustNotAdd ?? []),
         ...(evaluation.mustRemove ?? []),
       ]) {
-        assert.doesNotMatch(result.output, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"));
+        assert.doesNotMatch(result.output, new RegExp(escapeRegExp(forbidden), "iu"));
       }
     } else if (result.resultType === "clarification") {
       assert.match(result.output, /\?\s*$/u);
     } else {
       for (const required of evaluation.mustMention ?? []) {
-        assert.match(result.output, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"));
+        assert.match(result.output, new RegExp(escapeRegExp(required), "iu"));
       }
     }
   }
@@ -215,12 +229,26 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
   assert.match(resultsById.get("structure-preservation").output, /^## Before deploy[\s\S]+## After deploy/u);
   assert.match(resultsById.get("installed-plugin-smoke").surface, /^installed-plugin\//u);
 
-  const evidence = execution.operationalEvidence;
+  const evidence = results.operationalEvidence;
   assert.match(evidence.seedCommit, /^[0-9a-f]{40}$/u);
-  assert.deepEqual(evidence.taskRefs, [
-    "/root/forward_operational_files",
-    "/root/forward_operational_context",
-  ]);
+
+  // What this protects is that the operational evidence came from exactly these
+  // two runs, in this order. The recording host's home directory is not part of
+  // that: freezing `/root/…` here pins a foreign machine's layout, which is the
+  // opposite of the `machine-agnostic` rule AGENTS.md states and
+  // documentation-contract.test.mjs enforces. Pin the run names and the count,
+  // anchored at a path boundary and at the end, and let the prefix vary.
+  assert.equal(evidence.taskRefs.length, 2);
+  for (const [index, run] of [
+    "forward_operational_files",
+    "forward_operational_context",
+  ].entries()) {
+    assert.match(
+      evidence.taskRefs[index],
+      new RegExp(`(?:^|/)${escapeRegExp(run)}$`, "u"),
+      `operational task reference ${index} must name the ${run} run`,
+    );
+  }
   assert.deepEqual(evidence.postconditions.trackedModified, [
     "a.md",
     "docs/note.md",
@@ -248,8 +276,7 @@ test("recorded fresh-agent and installed-plugin evaluations satisfy their contra
 });
 
 test("recorded evaluations are bound to the skill they were produced against", async () => {
-  const execution = await readJson("tests/fixtures/humanize-evaluation-results.json");
-  const digests = execution.implementationDigest;
+  const digests = (await execution()).implementationDigest;
 
   // The per-case inputDigest covers request/context/artifact only, so editing
   // SKILL.md or the rubric leaves every recorded output passing against
@@ -259,8 +286,11 @@ test("recorded evaluations are bound to the skill they were produced against", a
   // Normalized to LF before hashing — the repository checks out CRLF on
   // Windows, so raw bytes would differ per checkout and the digest would be
   // unpinnable rather than stale-detecting.
-  for (const path of [skillPath, rubricPath]) {
-    const normalized = (await read(path)).replace(/\r\n/gu, "\n");
+  for (const [path, load] of [
+    [skillPath, skillText],
+    [rubricPath, rubricText],
+  ]) {
+    const normalized = (await load()).replace(/\r\n/gu, "\n");
     const digest = createHash("sha256").update(normalized).digest("hex");
     assert.equal(
       digests[path],
@@ -271,8 +301,7 @@ test("recorded evaluations are bound to the skill they were produced against", a
 });
 
 test("each operational evaluation is scoped to the files its own request names", async () => {
-  const execution = await readJson("tests/fixtures/humanize-evaluation-results.json");
-  const resultsById = new Map(execution.results.map((result) => [result.id, result]));
+  const [results, resultsById] = await Promise.all([execution(), recordedById()]);
 
   // The six operational scenarios were driven as two batched task runs, so
   // each recorded `output` is the whole batch's report. `mustMention` alone
@@ -290,7 +319,7 @@ test("each operational evaluation is scoped to the files its own request names",
 
   for (const [id, { target, outcome }] of Object.entries(scopes)) {
     const { output } = resultsById.get(id);
-    assert.match(output, new RegExp(target.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"), `${id} must name its target`);
+    assert.match(output, new RegExp(escapeRegExp(target), "u"), `${id} must name its target`);
     assert.match(output, outcome, `${id} must record its own request's outcome`);
   }
 
@@ -301,7 +330,7 @@ test("each operational evaluation is scoped to the files its own request names",
   const missing = resultsById.get("missing-file").output;
   assert.match(missing, /Stopped: `missing\.md` was not found/u);
 
-  const { postconditions } = execution.operationalEvidence;
+  const { postconditions } = results.operationalEvidence;
   assert.equal(postconditions["missing.md"], "absent");
   for (const written of [...postconditions.trackedModified, ...postconditions.untrackedCreated]) {
     assert.notEqual(written, "missing.md");

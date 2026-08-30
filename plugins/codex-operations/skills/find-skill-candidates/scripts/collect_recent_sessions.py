@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Collect bounded, redacted evidence from recent Codex session JSONL files."""
+"""Collect bounded, redacted evidence from recent Codex session JSONL files.
+
+Requires Python 3.11 or newer: this script uses ``datetime.UTC``, which was
+added in 3.11.
+"""
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import re
 import sys
@@ -19,12 +24,12 @@ MAX_EXCERPT_CHARS = 500
 MAX_TEXT_CHARS_PER_RECORD = 2000
 
 SKILL_PATTERN = re.compile(r"\$[a-z0-9][a-z0-9-]{1,63}\b")
-SKILL_WORD_PATTERN = re.compile(
-    r"\b(skill|skills|SKILL\.md|agents[/\\]skills)\b", re.IGNORECASE
-)
+SKILL_WORD_PATTERN = re.compile(r"\bskills?\b", re.IGNORECASE)
+# Friction words carry difficulty; bare frequency words ("often", "repeated")
+# belong to WORKFLOW_PATTERN so a record cannot count toward both summaries.
 FRICTION_PATTERN = re.compile(
     r"\b(failed|error|blocked|confusing|unclear|struggl(?:e|ed|ing)|"
-    r"workaround|manual|again|repeated|often|candidate|missed trigger|"
+    r"workaround|manual|again|candidate|missed trigger|"
     r"more helpful|not useful|doesn't trigger|did not trigger)\b",
     re.IGNORECASE,
 )
@@ -125,8 +130,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.hours <= 0:
         parser.error("--hours must be greater than zero")
+    if not math.isfinite(args.hours):
+        parser.error("--hours must be a finite number")
     if args.max_excerpts < 0:
         parser.error("--max-excerpts must be zero or greater")
+    try:
+        args.since = dt.datetime.now(dt.UTC) - dt.timedelta(hours=args.hours)
+    except (OverflowError, ValueError):
+        parser.error("--hours is too large to form a lookback window")
     args.skills_dir = unique_paths(args.skills_dir or default_skill_roots())
     return args
 
@@ -146,7 +157,7 @@ def parse_timestamp(value: Any) -> dt.datetime | None:
     return parsed.astimezone(dt.UTC)
 
 
-def iter_candidate_files(root: Path, since: dt.datetime) -> Iterable[Path]:
+def iter_candidate_files(root: Path, since: dt.datetime) -> list[Path]:
     if not root.exists():
         return []
     cutoff = since.timestamp()
@@ -162,12 +173,15 @@ def iter_candidate_files(root: Path, since: dt.datetime) -> Iterable[Path]:
 
 def safe_text(value: Any) -> str:
     chunks: list[str] = []
+    joined_length = 0
 
     def walk(node: Any) -> None:
-        if len(" ".join(chunks)) >= MAX_TEXT_CHARS_PER_RECORD:
+        nonlocal joined_length
+        if joined_length >= MAX_TEXT_CHARS_PER_RECORD:
             return
         if isinstance(node, str):
             if node and not node.startswith("data:image/"):
+                joined_length += len(node) + (1 if chunks else 0)
                 chunks.append(node)
             return
         if isinstance(node, list):
@@ -241,18 +255,13 @@ def read_skill_metadata(skill_roots: Iterable[Path]) -> list[tuple[str, str]]:
     return sorted(skills.items())
 
 
-def markdown_escape(text: str) -> str:
-    return text.replace("|", "\\|")
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     reconfigure = getattr(sys.stdout, "reconfigure", None)
     if reconfigure is not None:
         reconfigure(encoding="utf-8", errors="replace")
     args = parse_args(argv)
-    now = dt.datetime.now(dt.UTC)
-    since = now - dt.timedelta(hours=args.hours)
-    files = list(iter_candidate_files(args.sessions_dir, since))
+    since = args.since
+    files = iter_candidate_files(args.sessions_dir, since)
 
     scanned_records = 0
     included_records = 0
@@ -301,7 +310,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 matches = {
                     match
                     for match in SKILL_PATTERN.findall(text)
-                    if match.lower() not in IGNORED_DOLLAR_NAMES
+                    if match not in IGNORED_DOLLAR_NAMES
                 }
                 for match in matches:
                     skill_mentions[match] += 1
@@ -368,11 +377,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"- Friction-related records: {signal_counts['friction']}")
     print(f"- Reusable-workflow records: {signal_counts['workflow']}")
     if skill_mentions:
+        ranked_mentions = sorted(
+            skill_mentions.items(), key=lambda item: (-item[1], item[0])
+        )[:20]
         print(
             "- Skill mentions: "
-            + ", ".join(
-                f"`{name}` ({count})" for name, count in skill_mentions.most_common(20)
-            )
+            + ", ".join(f"`{name}` ({count})" for name, count in ranked_mentions)
         )
     else:
         print("- Skill mentions: none")
@@ -391,10 +401,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("## Bounded Redacted Excerpts")
     if excerpts:
         for timestamp, session, labels, excerpt in excerpts:
-            print(
-                f"- `{timestamp}` `{session}` [{labels}] "
-                f"{markdown_escape(excerpt)}"
-            )
+            print(f"- `{timestamp}` `{session}` [{labels}] {excerpt}")
     else:
         print("- No relevant excerpts found.")
 

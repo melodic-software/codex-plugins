@@ -84,8 +84,13 @@ paths, tool installation, subscription, or credentials as a consumer default.
   `$skill-creator` when those workflows are available.
 - Keep every skill focused on one recognizable goal. Put essential procedure in
   `SKILL.md` and detailed variants in directly linked `references/` files.
-- Keep `agents/openai.yaml` aligned with its skill as UI and invocation
-  metadata; do not treat that file as a custom execution agent definition.
+- Keep `agents/openai.yaml` aligned with its skill. It is the harness-facing
+  sidecar covering `interface` presentation, `dependencies.tools` MCP
+  declarations, and `policy` (`allow_implicit_invocation`, product
+  restrictions); do not treat that file as a custom execution agent definition.
+  A declared MCP dependency is metadata only — it neither installs nor
+  authenticates a server, so the capability check, fallback, and credential
+  handling stay in the skill.
 - Package a custom agent only when current official Codex documentation defines
   the target discovery and packaging contract. Otherwise use a focused skill or
   normal Codex task coordination.

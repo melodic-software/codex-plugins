@@ -1,4 +1,4 @@
 interface:
   display_name: "Migrate Plugin"
   short_description: "Translate plugins into Codex-native packages"
-  default_prompt: "Use $migrate-plugin to port this plugin into a Codex-native package."
+  default_prompt: "Use $plugin-ops:migrate-plugin to port this plugin into a Codex-native package."

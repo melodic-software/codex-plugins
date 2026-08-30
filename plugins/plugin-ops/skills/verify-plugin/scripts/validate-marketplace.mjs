@@ -11,23 +11,70 @@ const INSTALLATION_POLICIES = new Set(["NOT_AVAILABLE", "AVAILABLE", "INSTALLED_
 const AUTH_POLICIES = new Set(["ON_INSTALL", "ON_USE"]);
 const MACHINE_PATH_PATTERN = /(?:[A-Za-z]:[\\/]Users[\\/][^\\/\s]+|\/Users\/[^/\s]+|\/home\/[^/\s]+)/;
 
-async function exists(candidate) {
+// Every one of these means "nothing can live at that path", so they are absence
+// rather than failure: ENOTDIR and ELOOP mean a path component is not a usable
+// directory, ENAMETOOLONG means the path cannot name a file at all.
+const ABSENT_ERROR_CODES = new Set(["ENOENT", "ENOTDIR", "ELOOP", "ENAMETOOLONG"]);
+
+const PRESENT = "present";
+const ABSENT = "absent";
+const UNREADABLE = "unreadable";
+
+function describeError(error) {
+  return `${error?.code ?? "unknown error"}: ${error?.message ?? String(error)}`;
+}
+
+/**
+ * Classify a path as present, absent, or unreadable. Unreadable paths (EACCES
+ * and friends) are reported once, here, so the caller never adds a second
+ * "missing X" error for the same defect and the CLI never crashes on them.
+ */
+async function pathState(candidate, result) {
   try {
     await stat(candidate);
-    return true;
+    return PRESENT;
   } catch (error) {
-    if (error?.code === "ENOENT") return false;
-    throw error;
+    if (ABSENT_ERROR_CODES.has(error?.code)) return ABSENT;
+    result.errors.push({ code: "unreadable-path", file: candidate, message: `Cannot inspect path (${describeError(error)}).` });
+    return UNREADABLE;
+  }
+}
+
+async function isPresent(candidate, result) {
+  return (await pathState(candidate, result)) === PRESENT;
+}
+
+async function readDirectory(directory, result) {
+  try {
+    return await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    result.errors.push({ code: "unreadable-path", file: directory, message: `Cannot list directory (${describeError(error)}).` });
+    return null;
+  }
+}
+
+async function readText(file, result) {
+  try {
+    return await readFile(file, "utf8");
+  } catch (error) {
+    result.errors.push({ code: "unreadable-file", file, message: `Cannot read file (${describeError(error)}).` });
+    return null;
   }
 }
 
 async function readJson(file, result) {
+  const text = await readText(file, result);
+  if (text === null) return null;
   try {
-    return JSON.parse(await readFile(file, "utf8"));
+    return JSON.parse(text);
   } catch (error) {
     result.errors.push({ code: "invalid-json", file, message: error.message });
     return null;
   }
+}
+
+function isDeclared(value) {
+  return value !== undefined && value !== null;
 }
 
 function requireString(value, code, file, result) {
@@ -39,7 +86,11 @@ function requireString(value, code, file, result) {
 }
 
 function resolveContained(root, relativePath, code, file, result) {
-  if (typeof relativePath !== "string" || !relativePath.startsWith("./")) {
+  if (typeof relativePath !== "string") {
+    result.errors.push({ code, file, message: `Path must be a string relative to the package root, got ${relativePath === null ? "null" : typeof relativePath}.` });
+    return null;
+  }
+  if (!relativePath.startsWith("./")) {
     result.errors.push({ code, file, message: "Path must be relative to the package root and start with './'." });
     return null;
   }
@@ -50,6 +101,18 @@ function resolveContained(root, relativePath, code, file, result) {
     return null;
   }
   return resolved;
+}
+
+/**
+ * Report a declared path that resolves inside the package but has nothing on
+ * disk. An invalid path was already reported by resolveContained, and an
+ * unreadable one by pathState, so each defect yields exactly one error.
+ */
+async function requireDeclaredFile(resolved, code, file, message, result) {
+  if (!resolved) return;
+  if ((await pathState(resolved, result)) === ABSENT) {
+    result.errors.push({ code, file, message });
+  }
 }
 
 function parseFrontmatter(text) {
@@ -63,21 +126,25 @@ function parseFrontmatter(text) {
   return values;
 }
 
-async function validateSkills(pluginRoot, skillsPath, result) {
-  const skillsRoot = resolveContained(pluginRoot, skillsPath, "invalid-skills-path", result.target, result);
+async function validateSkills(pluginRoot, skillsPath, manifestFile, result, skillNames) {
+  const skillsRoot = resolveContained(pluginRoot, skillsPath, "invalid-skills-path", manifestFile, result);
   if (!skillsRoot) return;
-  if (!(await exists(skillsRoot))) {
-    result.errors.push({ code: "missing-skills-directory", file: skillsRoot, message: "Declared skills directory does not exist." });
+  const skillsState = await pathState(skillsRoot, result);
+  if (skillsState !== PRESENT) {
+    if (skillsState === ABSENT) {
+      result.errors.push({ code: "missing-skills-directory", file: skillsRoot, message: "Declared skills directory does not exist." });
+    }
     return;
   }
 
-  const entries = await readdir(skillsRoot, { withFileTypes: true });
-  const skillNames = new Set();
+  const entries = await readDirectory(skillsRoot, result);
+  if (!entries) return;
   for (const entry of entries.filter((candidate) => candidate.isDirectory())) {
     const skillRoot = path.join(skillsRoot, entry.name);
     const skillFile = path.join(skillRoot, "SKILL.md");
-    if (!(await exists(skillFile))) continue;
-    const text = await readFile(skillFile, "utf8");
+    if (!(await isPresent(skillFile, result))) continue;
+    const text = await readText(skillFile, result);
+    if (text === null) continue;
     const frontmatter = parseFrontmatter(text);
     if (!frontmatter) {
       result.errors.push({ code: "missing-skill-frontmatter", file: skillFile, message: "SKILL.md must start with YAML frontmatter." });
@@ -91,27 +158,33 @@ async function validateSkills(pluginRoot, skillsPath, result) {
     if (!description) {
       result.errors.push({ code: "missing-skill-description", file: skillFile, message: "Skill description is required." });
     }
-    if (name && skillNames.has(name)) {
-      result.errors.push({ code: "duplicate-skill-name", file: skillFile, message: `Duplicate skill name '${name}'.` });
+    // Skill names are invoked bare (`$name`), so they must be unique across the
+    // whole validated target, not merely within one skills directory, where the
+    // filesystem already guarantees distinct directory names.
+    if (name && skillNames.has(name) && skillNames.get(name) !== skillFile) {
+      result.errors.push({ code: "duplicate-skill-name", file: skillFile, message: `Duplicate skill name '${name}', already declared by ${skillNames.get(name)}.` });
     }
-    if (name) skillNames.add(name);
-    if (text.includes("[TODO:") || text.includes("TODO:")) {
+    if (name) skillNames.set(name, skillFile);
+    if (text.includes("TODO:")) {
       result.errors.push({ code: "skill-placeholder", file: skillFile, message: "Remove TODO placeholders before publishing." });
     }
     if (MACHINE_PATH_PATTERN.test(text)) {
       result.errors.push({ code: "machine-specific-path", file: skillFile, message: "Skill instructions contain a user-home absolute path." });
     }
     const agentMetadata = path.join(skillRoot, "agents", "openai.yaml");
-    if (!(await exists(agentMetadata))) {
+    if ((await pathState(agentMetadata, result)) === ABSENT) {
       result.warnings.push({ code: "missing-skill-ui-metadata", file: skillRoot, message: "Consider generating agents/openai.yaml with skill-creator." });
     }
   }
 }
 
-async function validatePlugin(pluginRoot, expectedName, result) {
+async function validatePlugin(pluginRoot, expectedName, result, skillNames) {
   const manifestFile = path.join(pluginRoot, ".codex-plugin", "plugin.json");
-  if (!(await exists(manifestFile))) {
-    result.errors.push({ code: "missing-plugin-manifest", file: manifestFile, message: "Plugin manifest does not exist." });
+  const manifestState = await pathState(manifestFile, result);
+  if (manifestState !== PRESENT) {
+    if (manifestState === ABSENT) {
+      result.errors.push({ code: "missing-plugin-manifest", file: manifestFile, message: "Plugin manifest does not exist." });
+    }
     return;
   }
   const manifest = await readJson(manifestFile, result);
@@ -133,19 +206,21 @@ async function validatePlugin(pluginRoot, expectedName, result) {
   for (const field of ["displayName", "shortDescription", "longDescription", "developerName", "category"]) {
     requireString(manifest.interface?.[field], `missing-interface-${field}`, manifestFile, result);
   }
-  if (manifest.apps && !(await exists(resolveContained(pluginRoot, manifest.apps, "invalid-app-path", manifestFile, result) ?? ""))) {
-    result.errors.push({ code: "missing-app-manifest", file: manifestFile, message: "Declared apps file does not exist." });
+  if (isDeclared(manifest.apps)) {
+    const appsPath = resolveContained(pluginRoot, manifest.apps, "invalid-app-path", manifestFile, result);
+    await requireDeclaredFile(appsPath, "missing-app-manifest", manifestFile, "Declared apps file does not exist.", result);
   }
-  if (typeof manifest.mcpServers === "string") {
+  // The published manifest contract declares `mcpServers` as a './'-relative
+  // path to an .mcp.json file; the server map itself lives inside that file.
+  // Anything else is reported as an invalid path rather than skipped silently.
+  if (isDeclared(manifest.mcpServers)) {
     const mcpPath = resolveContained(pluginRoot, manifest.mcpServers, "invalid-mcp-path", manifestFile, result);
-    if (mcpPath && !(await exists(mcpPath))) {
-      result.errors.push({ code: "missing-mcp-manifest", file: manifestFile, message: "Declared MCP file does not exist." });
-    }
+    await requireDeclaredFile(mcpPath, "missing-mcp-manifest", manifestFile, "Declared MCP file does not exist.", result);
   }
-  if (manifest.skills) await validateSkills(pluginRoot, manifest.skills, result);
+  if (isDeclared(manifest.skills)) await validateSkills(pluginRoot, manifest.skills, manifestFile, result, skillNames);
 }
 
-async function validateMarketplaceRoot(root, result) {
+async function validateMarketplaceRoot(root, result, skillNames) {
   const marketplaceFile = path.join(root, ".agents", "plugins", "marketplace.json");
   const marketplace = await readJson(marketplaceFile, result);
   if (!marketplace) return;
@@ -157,16 +232,19 @@ async function validateMarketplaceRoot(root, result) {
 
   const names = new Set();
   for (const plugin of marketplace.plugins) {
-    requireString(plugin?.name, "missing-marketplace-plugin-name", marketplaceFile, result);
-    if (plugin?.name && names.has(plugin.name)) {
-      result.errors.push({ code: "duplicate-marketplace-plugin", file: marketplaceFile, message: `Duplicate plugin entry '${plugin.name}'.` });
+    const name = plugin?.name;
+    requireString(name, "missing-marketplace-plugin-name", marketplaceFile, result);
+    if (name) {
+      if (names.has(name)) {
+        result.errors.push({ code: "duplicate-marketplace-plugin", file: marketplaceFile, message: `Duplicate plugin entry '${name}'.` });
+      }
+      names.add(name);
     }
-    if (plugin?.name) names.add(plugin.name);
     if (!INSTALLATION_POLICIES.has(plugin?.policy?.installation)) {
-      result.errors.push({ code: "invalid-installation-policy", file: marketplaceFile, message: `Invalid installation policy for '${plugin?.name ?? "unknown"}'.` });
+      result.errors.push({ code: "invalid-installation-policy", file: marketplaceFile, message: `Invalid installation policy for '${name ?? "unknown"}'.` });
     }
     if (!AUTH_POLICIES.has(plugin?.policy?.authentication)) {
-      result.errors.push({ code: "invalid-authentication-policy", file: marketplaceFile, message: `Invalid authentication policy for '${plugin?.name ?? "unknown"}'.` });
+      result.errors.push({ code: "invalid-authentication-policy", file: marketplaceFile, message: `Invalid authentication policy for '${name ?? "unknown"}'.` });
     }
     requireString(plugin?.category, "missing-marketplace-category", marketplaceFile, result);
 
@@ -174,19 +252,19 @@ async function validateMarketplaceRoot(root, result) {
     const localPath = typeof source === "string" ? source : source?.source === "local" ? source.path : null;
     if (localPath) {
       const pluginRoot = resolveContained(root, localPath, "invalid-marketplace-source", marketplaceFile, result);
-      if (pluginRoot) await validatePlugin(pluginRoot, plugin.name, result);
+      if (pluginRoot) await validatePlugin(pluginRoot, name, result, skillNames);
       continue;
     }
     if (source?.source === "url" && !source.url) {
-      result.errors.push({ code: "missing-source-url", file: marketplaceFile, message: `URL source '${plugin?.name}' has no URL.` });
+      result.errors.push({ code: "missing-source-url", file: marketplaceFile, message: `URL source '${name}' has no URL.` });
     } else if (source?.source === "git-subdir" && (!source.url || !source.path)) {
-      result.errors.push({ code: "invalid-git-subdir-source", file: marketplaceFile, message: `Git subdirectory source '${plugin?.name}' requires url and path.` });
+      result.errors.push({ code: "invalid-git-subdir-source", file: marketplaceFile, message: `Git subdirectory source '${name}' requires url and path.` });
     } else if (source?.source === "npm" && !source.package) {
-      result.errors.push({ code: "missing-npm-package", file: marketplaceFile, message: `npm source '${plugin?.name}' has no package.` });
+      result.errors.push({ code: "missing-npm-package", file: marketplaceFile, message: `npm source '${name}' has no package.` });
     } else if (!source || !["url", "git-subdir", "npm"].includes(source.source)) {
-      result.errors.push({ code: "unsupported-marketplace-source", file: marketplaceFile, message: `Unsupported source for '${plugin?.name ?? "unknown"}'.` });
+      result.errors.push({ code: "unsupported-marketplace-source", file: marketplaceFile, message: `Unsupported source for '${name ?? "unknown"}'.` });
     } else {
-      result.warnings.push({ code: "remote-source-not-expanded", file: marketplaceFile, message: `Remote plugin '${plugin.name}' was not structurally expanded.` });
+      result.warnings.push({ code: "remote-source-not-expanded", file: marketplaceFile, message: `Remote plugin '${name}' was not structurally expanded.` });
     }
   }
 }
@@ -194,13 +272,22 @@ async function validateMarketplaceRoot(root, result) {
 export async function validateTarget(target) {
   const root = path.resolve(target);
   const result = { target: root, kind: null, errors: [], warnings: [] };
-  if (await exists(path.join(root, ".agents", "plugins", "marketplace.json"))) {
+  const skillNames = new Map();
+  const marketplaceState = await pathState(path.join(root, ".agents", "plugins", "marketplace.json"), result);
+  if (marketplaceState === PRESENT) {
     result.kind = "marketplace";
-    await validateMarketplaceRoot(root, result);
-  } else if (await exists(path.join(root, ".codex-plugin", "plugin.json"))) {
+    await validateMarketplaceRoot(root, result, skillNames);
+    return result;
+  }
+  const pluginState = marketplaceState === UNREADABLE ? UNREADABLE : await pathState(path.join(root, ".codex-plugin", "plugin.json"), result);
+  if (pluginState === PRESENT) {
     result.kind = "plugin";
-    await validatePlugin(root, path.basename(root), result);
-  } else {
+    await validatePlugin(root, path.basename(root), result, skillNames);
+    return result;
+  }
+  // An unreadable probe was already reported; only a genuinely absent pair of
+  // entry points means the target itself is unrecognizable.
+  if (pluginState === ABSENT) {
     result.errors.push({ code: "unknown-target", file: root, message: "Expected a marketplace root or plugin root." });
   }
   return result;

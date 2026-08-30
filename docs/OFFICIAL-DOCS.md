@@ -16,6 +16,7 @@ Read the smallest complete set that covers the affected surface.
 | Built-in image generation and `$imagegen` invocation | [Image generation](https://learn.chatgpt.com/docs/image-generation) |
 | Plugin boundaries and component model | [Plugin architecture](https://developers.openai.com/plugins/concepts/plugins) |
 | Skill format, triggers, resources, and tests | [Build skills](https://developers.openai.com/plugins/build/skills) |
+| Skill loading, distribution, and the `agents/openai.yaml` keys `interface`, `policy`, and `dependencies` | [Build skills for Codex](https://learn.chatgpt.com/docs/build-skills) |
 | MCP tools, authentication, and server behavior | [Build an MCP server](https://developers.openai.com/plugins/build/mcp-server) |
 | Optional MCP-backed UI | [Add optional UI](https://developers.openai.com/plugins/build/chatgpt-ui) |
 | Manifests, paths, marketplaces, and packaging | [Package plugins and marketplaces](https://developers.openai.com/plugins/build/plugins) |

@@ -1,38 +1,33 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import {
+  assertMarketplacePlugin,
+  once,
+  readSkillContract,
+  skillPaths,
+} from "./helpers.mjs";
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
-const readJson = async (path) => JSON.parse(await read(path));
-const compact = (text) => text.replace(/\s+/gu, " ");
-const skillPath =
-  "plugins/scheduled-tasks/skills/manage-scheduled-tasks/SKILL.md";
+const paths = skillPaths("scheduled-tasks");
+
+// All four body tests assert against the same whitespace-collapsed skill, so
+// read it once. `readSkillContract` also pins the SKILL.md frontmatter name and
+// the `display_name`/`default_prompt` pair in `agents/openai.yaml`, which this
+// suite alone used to skip.
+const contract = once(() =>
+  readSkillContract(paths, "manage-scheduled-tasks", "Manage Scheduled Tasks"),
+);
+const manageSkill = async () => (await contract()).compactSkill;
 
 test("the marketplace exposes the Scheduled tasks plugin", async () => {
-  const [marketplace, manifest] = await Promise.all([
-    readJson(".agents/plugins/marketplace.json"),
-    readJson("plugins/scheduled-tasks/.codex-plugin/plugin.json"),
-  ]);
-
-  const entry = marketplace.plugins.find(({ name }) => name === "scheduled-tasks");
-  assert.deepEqual(entry, {
+  await assertMarketplacePlugin({
     name: "scheduled-tasks",
-    source: { source: "local", path: "./plugins/scheduled-tasks" },
-    policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+    version: "0.1.0",
     category: "Productivity",
   });
-  assert.equal(manifest.name, "scheduled-tasks");
-  assert.equal(manifest.version, "0.1.0");
-  assert.equal(manifest.skills, "./skills/");
-  assert.equal(manifest.interface.category, "Productivity");
-  assert.deepEqual(manifest.interface.capabilities, ["Read", "Write"]);
-  for (const field of ["mcpServers", "apps", "hooks"]) {
-    assert.equal(field in manifest, false);
-  }
 });
 
 test("the skill refreshes current docs and discovers native tools", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   assert.match(skill, /Complete this preflight on every invocation/u);
   assert.match(skill, /https:\/\/learn\.chatgpt\.com\/docs\/automations/u);
@@ -43,7 +38,7 @@ test("the skill refreshes current docs and discovers native tools", async () => 
 });
 
 test("direct and indirect requests share one focused management workflow", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   for (const operation of [
     "Explain or recommend",
@@ -54,7 +49,7 @@ test("direct and indirect requests share one focused management workflow", async
     "Pause or resume",
     "Delete",
   ]) {
-    assert.match(skill, new RegExp(`\\*\\*${operation}:\\*\\*`));
+    assert.match(skill, new RegExp(`\\*\\*${operation}:\\*\\*`, "u"));
   }
   assert.match(skill, /scheduled task inside the current chat/u);
   assert.match(skill, /standalone scheduled task/u);
@@ -62,7 +57,7 @@ test("direct and indirect requests share one focused management workflow", async
 });
 
 test("missing capabilities fail safely without a second scheduler", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   assert.match(skill, /If no native Scheduled management capability is available/u);
   assert.match(skill, /provide read-only guidance/u);
@@ -73,7 +68,7 @@ test("missing capabilities fail safely without a second scheduler", async () => 
 });
 
 test("repository context and unattended permissions constrain execution", async () => {
-  const skill = compact(await read(skillPath));
+  const skill = await manageSkill();
 
   assert.match(skill, /active `AGENTS\.md` chain/u);
   assert.match(skill, /only the relevant repository evidence/u);

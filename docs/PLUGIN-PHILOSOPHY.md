@@ -67,11 +67,23 @@ policy system when a current native surface can express the requirement. When a
 native gap is real, the change MUST document the missing capability and isolate
 the workaround behind a replaceable adapter.
 
-`agents/openai.yaml` is skill presentation and invocation metadata, not a
-custom execution agent. Keep it synchronized with its `SKILL.md`. Package or
-migrate a custom agent only when current official Codex documentation defines
-the discovery and packaging contract; otherwise express the cohesive workflow
-as a skill or use normal task coordination.
+`agents/openai.yaml` is the skill's harness-facing sidecar, not a custom
+execution agent. It carries exactly three concerns: `interface` presentation
+(display name, short description, icons, brand color, default prompt),
+`dependencies.tools` declarations of the MCP tools the skill expects, and
+`policy` (`allow_implicit_invocation`, product restrictions). Keep all three
+synchronized with the owning `SKILL.md`.
+
+A `dependencies.tools` entry is a declaration, not a connection: it names an
+MCP dependency for discovery and presentation and does not install,
+authenticate, or start a server. It is therefore subject to the same
+outbound-port rules as any other integration — declare only what the skill
+actually consumes, keep the capability check and fallback in the skill, and
+never place a credential or a private endpoint in the sidecar.
+
+Package or migrate a custom agent only when current official Codex
+documentation defines the discovery and packaging contract; otherwise express
+the cohesive workflow as a skill or use normal task coordination.
 
 ## Ports and adapters
 
@@ -123,8 +135,9 @@ Configuration SHOULD flow through native surfaces in this order:
 
 Defaults MUST be quiet, safe, reversible, and non-blocking when a safe choice
 exists. Required questions MUST be limited to material choices that cannot be
-derived from authorized context. Optional integrations MUST be capability-
-detected and MUST have either a useful fallback or a clear unsupported result.
+derived from authorized context. Optional integrations MUST be
+capability-detected and MUST have either a useful fallback or a clear
+unsupported result.
 
 Extension points MUST describe their input, output, error, and trust boundary.
 Do not expose an entire tool or environment when a smaller port is sufficient.

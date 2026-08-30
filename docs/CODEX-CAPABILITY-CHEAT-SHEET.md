@@ -2,10 +2,23 @@
 
 <!-- markdownlint-disable MD013 -->
 
-Quick reference for choosing and explicitly invoking Codex skills. This is a
-user-facing snapshot, verified on 2026-08-05 against the live official docs and
-the installed Codex CLI. Availability can vary by release, plan, workspace,
-platform, and installed plugins.
+Quick reference for choosing and explicitly invoking Codex skills. Availability
+can vary by release, plan, workspace, platform, and installed plugins.
+
+This page mixes two kinds of claim, and they carry different verification
+dates. Do not read one date as covering the other.
+
+| Claim | Basis | Last verified |
+| --- | --- | --- |
+| Invocation grammar and CLI syntax | Codex CLI source (`openai/codex`, `main`) | 2026-08-30 |
+| Built-in system skill roster | Codex CLI source: skills embedded in the binary | 2026-08-30 |
+| Bundled and runtime plugin roster, and the `latex` example | One operator's installed environment | 2026-08-05, **not re-verified since** |
+
+The bundled and runtime plugin table below is an environment snapshot, not an
+entitlement list. It was captured from one account on one platform and cannot
+be re-verified from source, because that roster is served at run time. Treat it
+as an illustration of the naming pattern and confirm the live set with
+`/plugins` or `codex plugin list --available --json`.
 
 ## The short version
 
@@ -22,10 +35,18 @@ matters. In Codex CLI, `/skills` browses skills and `/plugins` browses plugins.
 After installing a plugin, start a new task or CLI session so its skills are
 discovered.
 
+The namespace is not cosmetic. Codex qualifies a skill's name at load time with
+the name from the nearest plugin manifest above it, so a skill named `search`
+inside a plugin named `sample` is loaded as `sample:search`. A `$` mention is
+matched against that qualified name, so the bare `$search` form does not
+resolve for a plugin-provided skill. Built-in system skills sit outside any
+plugin manifest, so they keep the bare `$skill-name` form.
+
 ## Built-in system skills
 
-These are the user-facing system skills available in the verified Codex
-environment. They are skills, not plugins.
+These skills are embedded in the Codex CLI binary and unpacked into
+`CODEX_HOME/skills/.system` on startup; no plugin install is needed. They are
+skills, not plugins.
 
 | Capability | Natural-language request | Explicit Codex request |
 | --- | --- | --- |
@@ -34,6 +55,11 @@ environment. They are skills, not plugins.
 | Plugin creation | `Create a Codex plugin for this reusable workflow.` | `$plugin-creator Create a Codex plugin for this reusable workflow.` |
 | Skill creation | `Turn this repeated release checklist into a skill.` | `$skill-creator Turn this repeated release checklist into a skill.` |
 | Skill installation | `Install the skill from openai/skills.` | `$skill-installer Install the skill from openai/skills.` |
+| Delegated code review | `Review my uncommitted changes against the base branch.` | `$review-agent Review my uncommitted changes against the base branch.` |
+
+`$review-agent` is written for delegation: it performs a read-only, defect-first
+review and returns findings without editing files, committing, or posting review
+comments.
 
 `$imagegen` is the important special case: it is built-in image generation,
 not an image-generation marketplace plugin. Attach or identify reference images
@@ -41,9 +67,10 @@ and state what must change and what must remain fixed when editing.
 
 ## Official bundled and runtime plugins
 
-The following plugins were installed and enabled in the verified environment.
-Use the exact namespaced skill identifier shown below when invoking one
-explicitly.
+The following plugins were installed and enabled in one operator's environment
+on 2026-08-05, and that roster has not been re-verified since. Use the exact
+namespaced skill identifier shown below when invoking one explicitly, and treat
+the rows themselves as an example rather than as your own entitlements.
 
 | Plugin capability | Natural-language request | Explicit Codex request |
 | --- | --- | --- |
@@ -76,13 +103,22 @@ codex plugin list --available --json
 codex plugin marketplace list --json
 ```
 
-At verification time, the official bundled marketplace also offered the
-uninstalled `latex` plugin. Install it before using skills such as
-`$latex:latex-doctor` or `$latex:latex-compile`:
+`--available` widens the listing to uninstalled marketplace plugins and is only
+accepted together with `--json`; `codex plugin list --available` on its own is
+rejected.
+
+On 2026-08-05 the official bundled marketplace also offered the uninstalled
+`latex` plugin, and that has not been re-checked since. Where such a plugin is
+offered, install it before using its skills, for example `$latex:latex-doctor`
+or `$latex:latex-compile`:
 
 ```powershell
 codex plugin add latex@openai-bundled
 ```
+
+`openai-bundled` is the configured name of the official bundled marketplace.
+`codex plugin add` accepts either `<plugin>@<marketplace>` or a bare
+`<plugin>` with `--marketplace <marketplace>`; the two forms are equivalent.
 
 Partner connectors, Codex Security, and other OpenAI-curated entries are
 plugins, not built-in system skills. Installation, authentication, policy, and
@@ -110,8 +146,11 @@ codex plugin list --available --json
 codex plugin marketplace list --json
 ```
 
-When this snapshot changes, update the tables and the verification date. Keep
-the full dynamic plugin directory out of the repository.
+When this snapshot changes, update the affected table and only the verification
+date that covers it. The two dates at the top of this page move independently:
+re-reading the CLI source does not re-verify anyone's plugin roster, and
+re-capturing a roster does not re-verify the CLI grammar. Keep the full dynamic
+plugin directory out of the repository.
 
 ## Official pointers
 

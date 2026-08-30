@@ -35,7 +35,7 @@ assumptions.
    defaults. Keep consumer-specific policy outside the plugin.
 9. Prefer explicit input and native Codex configuration. Put optional tools
    behind narrow adapters with a useful fallback or clear unsupported result.
-10. Run `$verify-plugin`, the built-in creation validators, and behavioral tests
+10. Run `$plugin-ops:verify-plugin`, the built-in creation validators, and behavioral tests
     in a new Codex task with the source marketplace and sibling plugins disabled.
 
 Test direct, indirect, negative, incomplete, nested-repository-context, missing-
