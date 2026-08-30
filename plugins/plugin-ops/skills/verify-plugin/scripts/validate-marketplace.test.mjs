@@ -1,36 +1,32 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import { validateTarget } from "./validate-marketplace.mjs";
 
+const codesOf = (entries) => new Set(entries.map((entry) => entry.code));
+
 async function writeJson(file, value) {
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-async function createFixture(options = {}) {
+async function createFixture(t, options = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "codex-marketplace-test-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
   const pluginRoot = path.join(root, "plugins", "sample-plugin");
+  const entry = {
+    name: "sample-plugin",
+    source: { source: "local", path: "./plugins/sample-plugin" },
+    policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+    category: "Developer Tools",
+  };
   await writeJson(path.join(root, ".agents", "plugins", "marketplace.json"), {
     name: "sample",
     interface: { displayName: "Sample" },
-    plugins: [
-      {
-        name: "sample-plugin",
-        source: { source: "local", path: "./plugins/sample-plugin" },
-        policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
-        category: "Developer Tools",
-      },
-      ...(options.duplicate ? [{
-        name: "sample-plugin",
-        source: { source: "local", path: "./plugins/sample-plugin" },
-        policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
-        category: "Developer Tools",
-      }] : []),
-    ],
+    plugins: options.duplicate ? [entry, entry] : [entry],
   });
   await writeJson(path.join(pluginRoot, ".codex-plugin", "plugin.json"), {
     name: options.wrongName ? "wrong-name" : "sample-plugin",
@@ -71,7 +67,7 @@ async function createFixture(options = {}) {
       lines.push("Read `/Users/example/.codex/config.toml` for credentials.");
       lines.push("");
     }
-    skillBody = `${lines.join("\n")}`;
+    skillBody = lines.join("\n");
   }
 
   await writeFile(path.join(skillRoot, "SKILL.md"), skillBody);
@@ -84,42 +80,40 @@ async function createFixture(options = {}) {
   return root;
 }
 
-test("accepts a complete local marketplace", async () => {
-  const result = await validateTarget(await createFixture());
+test("accepts a complete local marketplace", async (t) => {
+  const result = await validateTarget(await createFixture(t));
   assert.deepEqual(result.errors, []);
   assert.equal(result.kind, "marketplace");
 });
 
-test("rejects duplicate entries and manifest name drift", async () => {
-  const result = await validateTarget(await createFixture({ duplicate: true, wrongName: true }));
-  const codes = new Set(result.errors.map((error) => error.code));
+test("rejects duplicate entries and manifest name drift", async (t) => {
+  const result = await validateTarget(await createFixture(t, { duplicate: true, wrongName: true }));
+  const codes = codesOf(result.errors);
   assert.ok(codes.has("duplicate-marketplace-plugin"));
   assert.ok(codes.has("plugin-name-mismatch"));
 });
 
-test("rejects missing skill frontmatter", async () => {
-  const result = await validateTarget(await createFixture({ missingFrontmatter: true }));
-  const codes = new Set(result.errors.map((error) => error.code));
-  assert.ok(codes.has("missing-skill-frontmatter"));
+test("rejects missing skill frontmatter", async (t) => {
+  const result = await validateTarget(await createFixture(t, { missingFrontmatter: true }));
+  assert.ok(codesOf(result.errors).has("missing-skill-frontmatter"));
 });
 
-test("rejects skill name mismatch, TODO placeholders, and machine paths", async () => {
+test("rejects skill name mismatch, TODO placeholders, and machine paths", async (t) => {
   const result = await validateTarget(
-    await createFixture({
+    await createFixture(t, {
       skillNameMismatch: true,
       todoPlaceholder: true,
       machinePath: true,
     }),
   );
-  const codes = new Set(result.errors.map((error) => error.code));
+  const codes = codesOf(result.errors);
   assert.ok(codes.has("skill-name-mismatch"));
   assert.ok(codes.has("skill-placeholder"));
   assert.ok(codes.has("machine-specific-path"));
 });
 
-test("warns when skill UI metadata is missing", async () => {
-  const result = await validateTarget(await createFixture({ omitUiMetadata: true }));
+test("warns when skill UI metadata is missing", async (t) => {
+  const result = await validateTarget(await createFixture(t, { omitUiMetadata: true }));
   assert.deepEqual(result.errors, []);
-  const codes = new Set(result.warnings.map((warning) => warning.code));
-  assert.ok(codes.has("missing-skill-ui-metadata"));
+  assert.ok(codesOf(result.warnings).has("missing-skill-ui-metadata"));
 });

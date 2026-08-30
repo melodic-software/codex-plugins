@@ -95,7 +95,7 @@ async function validateSkills(pluginRoot, skillsPath, result) {
       result.errors.push({ code: "duplicate-skill-name", file: skillFile, message: `Duplicate skill name '${name}'.` });
     }
     if (name) skillNames.add(name);
-    if (text.includes("[TODO:") || text.includes("TODO:")) {
+    if (text.includes("TODO:")) {
       result.errors.push({ code: "skill-placeholder", file: skillFile, message: "Remove TODO placeholders before publishing." });
     }
     if (MACHINE_PATH_PATTERN.test(text)) {
@@ -157,16 +157,19 @@ async function validateMarketplaceRoot(root, result) {
 
   const names = new Set();
   for (const plugin of marketplace.plugins) {
-    requireString(plugin?.name, "missing-marketplace-plugin-name", marketplaceFile, result);
-    if (plugin?.name && names.has(plugin.name)) {
-      result.errors.push({ code: "duplicate-marketplace-plugin", file: marketplaceFile, message: `Duplicate plugin entry '${plugin.name}'.` });
+    const name = plugin?.name;
+    requireString(name, "missing-marketplace-plugin-name", marketplaceFile, result);
+    if (name) {
+      if (names.has(name)) {
+        result.errors.push({ code: "duplicate-marketplace-plugin", file: marketplaceFile, message: `Duplicate plugin entry '${name}'.` });
+      }
+      names.add(name);
     }
-    if (plugin?.name) names.add(plugin.name);
     if (!INSTALLATION_POLICIES.has(plugin?.policy?.installation)) {
-      result.errors.push({ code: "invalid-installation-policy", file: marketplaceFile, message: `Invalid installation policy for '${plugin?.name ?? "unknown"}'.` });
+      result.errors.push({ code: "invalid-installation-policy", file: marketplaceFile, message: `Invalid installation policy for '${name ?? "unknown"}'.` });
     }
     if (!AUTH_POLICIES.has(plugin?.policy?.authentication)) {
-      result.errors.push({ code: "invalid-authentication-policy", file: marketplaceFile, message: `Invalid authentication policy for '${plugin?.name ?? "unknown"}'.` });
+      result.errors.push({ code: "invalid-authentication-policy", file: marketplaceFile, message: `Invalid authentication policy for '${name ?? "unknown"}'.` });
     }
     requireString(plugin?.category, "missing-marketplace-category", marketplaceFile, result);
 
@@ -174,19 +177,19 @@ async function validateMarketplaceRoot(root, result) {
     const localPath = typeof source === "string" ? source : source?.source === "local" ? source.path : null;
     if (localPath) {
       const pluginRoot = resolveContained(root, localPath, "invalid-marketplace-source", marketplaceFile, result);
-      if (pluginRoot) await validatePlugin(pluginRoot, plugin.name, result);
+      if (pluginRoot) await validatePlugin(pluginRoot, name, result);
       continue;
     }
     if (source?.source === "url" && !source.url) {
-      result.errors.push({ code: "missing-source-url", file: marketplaceFile, message: `URL source '${plugin?.name}' has no URL.` });
+      result.errors.push({ code: "missing-source-url", file: marketplaceFile, message: `URL source '${name}' has no URL.` });
     } else if (source?.source === "git-subdir" && (!source.url || !source.path)) {
-      result.errors.push({ code: "invalid-git-subdir-source", file: marketplaceFile, message: `Git subdirectory source '${plugin?.name}' requires url and path.` });
+      result.errors.push({ code: "invalid-git-subdir-source", file: marketplaceFile, message: `Git subdirectory source '${name}' requires url and path.` });
     } else if (source?.source === "npm" && !source.package) {
-      result.errors.push({ code: "missing-npm-package", file: marketplaceFile, message: `npm source '${plugin?.name}' has no package.` });
+      result.errors.push({ code: "missing-npm-package", file: marketplaceFile, message: `npm source '${name}' has no package.` });
     } else if (!source || !["url", "git-subdir", "npm"].includes(source.source)) {
-      result.errors.push({ code: "unsupported-marketplace-source", file: marketplaceFile, message: `Unsupported source for '${plugin?.name ?? "unknown"}'.` });
+      result.errors.push({ code: "unsupported-marketplace-source", file: marketplaceFile, message: `Unsupported source for '${name ?? "unknown"}'.` });
     } else {
-      result.warnings.push({ code: "remote-source-not-expanded", file: marketplaceFile, message: `Remote plugin '${plugin.name}' was not structurally expanded.` });
+      result.warnings.push({ code: "remote-source-not-expanded", file: marketplaceFile, message: `Remote plugin '${name}' was not structurally expanded.` });
     }
   }
 }
