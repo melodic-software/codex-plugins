@@ -13,6 +13,7 @@ const requiredOfficialPointers = [
   "https://learn.chatgpt.com/docs/build-plugins",
   "https://developers.openai.com/plugins/concepts/plugins",
   "https://developers.openai.com/plugins/build/skills",
+  "https://learn.chatgpt.com/docs/build-skills",
   "https://developers.openai.com/plugins/build/mcp-server",
   "https://developers.openai.com/plugins/build/chatgpt-ui",
   "https://developers.openai.com/plugins/build/plugins",
