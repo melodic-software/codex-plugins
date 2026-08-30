@@ -2,5 +2,3 @@ interface:
   display_name: "Coordinate Codex Work"
   short_description: "Direct multi-task and long-running Codex work."
   default_prompt: "Use $coordinate-codex-work to coordinate this work across Codex tasks and agents."
-policy:
-  allow_implicit_invocation: true
