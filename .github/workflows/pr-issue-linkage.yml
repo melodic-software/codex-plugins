@@ -11,6 +11,7 @@ on:
 
 permissions:
   pull-requests: read
+  actions: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -20,6 +21,7 @@ jobs:
   pr-issue-linkage:
     permissions:
       pull-requests: read
-    uses: melodic-software/ci-workflows/.github/workflows/pr-issue-linkage.yml@c136b27f404dd32ce3873f39a6f3443891d1c16e # c136b27 2026-07-27 v0.9.1
+      actions: read
+    uses: melodic-software/ci-workflows/.github/workflows/pr-issue-linkage.yml@0f8176e87e0be518f382664779655011bf95784a # v0.17.2
     with:
       runner: ubuntu-24.04
