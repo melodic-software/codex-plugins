@@ -79,6 +79,7 @@ plugins/<name>/
 docs/PLUGIN-PHILOSOPHY.md
 docs/MIGRATION-PLAYBOOK.md
 docs/OFFICIAL-DOCS.md
+docs/CODEX-CAPABILITY-CHEAT-SHEET.md
 ```
 
 ## Contributing
