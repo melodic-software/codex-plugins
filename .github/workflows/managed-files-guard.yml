@@ -58,7 +58,7 @@ jobs:
         # release carries it yet, so the pin-comment takes the convention's
         # fallback form; the claude-lanes-repin cascade advances it to the
         # first release that does (components/managed-files-guard/README.md).
-        uses: melodic-software/ci-workflows/.github/actions/managed-files-guard@3b2f4eab5b4bb58a150e400613350ede37742ee8 # 3b2f4ea 2026-08-30
+        uses: melodic-software/ci-workflows/.github/actions/managed-files-guard@8b9ebe6b89bd5ac1f9f8887ad2c487b2aa5718ad # 3b2f4ea 2026-08-30
         with:
           # `main` for the soak, per the action's own input contract ("Pin to
           # a full SHA in callers once soak completes"): the guard must read
