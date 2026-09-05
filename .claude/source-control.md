@@ -8,10 +8,10 @@ inference per that resolution order.
 
 ## pr_body_required_sections
 
-Must stay in step with what the `pr-issue-linkage / pr-issue-linkage` required check enforces
-(`.github/workflows/pr-issue-linkage.yml`, which calls `ci-workflows`' reusable). That gate rejects a
-body missing `## Fix` or `## Verification` by name, so listing a differently-named equivalent here
-sends an author straight into a red required check.
+Must stay in step with the section names the `pr-contract` composite reads. It runs as a step inside
+`ci-status`, the single required check. A body missing `## Fix` or `## Verification` by name does not
+turn that check red; the composite reports it with an advisory comment and the `needs-issue-linkage`
+label. Listing a differently-named equivalent here sends an author straight into that advisory noise.
 
 - Summary
 - Fix
