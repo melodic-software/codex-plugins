@@ -37,14 +37,23 @@ function findPython() {
 const python = findPython();
 const skip = python ? false : "Python 3 is not available";
 
+const toLf = (text) => (typeof text === "string" ? text.replaceAll("\r\n", "\n") : text);
+
 function runCollector(args, env) {
   if (!python) {
     throw new Error("runCollector needs Python; give this test the shared { skip } guard");
   }
-  return spawnSync(python.command, [...python.prefix, collector, ...args], {
+  const result = spawnSync(python.command, [...python.prefix, collector, ...args], {
     encoding: "utf8",
     env,
   });
+  // Python's text-mode stdout writes the platform newline, so on Windows every
+  // line the collector prints arrives as `\r\n`. That is correct for the tool
+  // and invisible to a `.includes()` assertion, but a test that splits on `\n`
+  // and compares a whole line for equality reads the trailing `\r` as a content
+  // difference. Normalize once here so every assertion below sees the same text
+  // on every platform; the collector itself is unchanged.
+  return { ...result, stdout: toLf(result.stdout), stderr: toLf(result.stderr) };
 }
 
 async function makeTempDir(t, prefix) {
