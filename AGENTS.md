@@ -145,7 +145,7 @@ Each line names a rule CI does not enforce; the linked file states it in full.
   recorded in the pull request: [preflight](#mandatory-documentation-preflight).
 - Repository prose links upstream Codex documentation and never copies its
   prose or examples: [documentation discipline](docs/PLUGIN-PHILOSOPHY.md#documentation-discipline).
-- Plugins carry no user, organization, repository, machine, sibling-plugin, or
+- Plugins carry no user, organization, machine, sibling-plugin, or
   source-host dependency, and use relative paths only:
   [release gates](docs/PLUGIN-PHILOSOPHY.md#release-gates).
 - `agents/openai.yaml` is the skill's sidecar, not a custom agent definition,
