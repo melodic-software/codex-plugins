@@ -135,3 +135,23 @@ pending.
 Read [the Cursor Cloud environment notes](docs/CURSOR-CLOUD-ENVIRONMENT.md)
 when working in a Cursor Cloud VM: toolchain, the test, validate, and run
 commands, and the `npm install` caveat.
+
+## Code Review Rules
+
+Each line names a rule CI does not enforce; the linked file states it in full.
+
+- Org-wide criteria: [`REVIEW.md`](https://github.com/melodic-software/standards/blob/main/REVIEW.md) in `melodic-software/standards`.
+- Live documentation preflight, with the consulted URLs and verification date
+  recorded in the pull request: [preflight](#mandatory-documentation-preflight).
+- Repository prose links upstream Codex documentation and never copies its
+  prose or examples: [documentation discipline](docs/PLUGIN-PHILOSOPHY.md#documentation-discipline).
+- Plugins carry no user, organization, repository, machine, sibling-plugin, or
+  source-host dependency, and use relative paths only:
+  [release gates](docs/PLUGIN-PHILOSOPHY.md#release-gates).
+- `agents/openai.yaml` is the skill's sidecar, not a custom agent definition,
+  and a declared MCP dependency installs nothing:
+  [authoring and packaging](#authoring-and-packaging).
+- Writes preserve unrelated changes, and hooks and external writes stay behind
+  Codex approval boundaries: [safety](docs/PLUGIN-PHILOSOPHY.md#safety-and-user-control).
+- A migration gives every source component one recorded disposition and omits
+  none silently: [migration playbook](docs/MIGRATION-PLAYBOOK.md#4-classify-every-component).
