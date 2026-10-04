@@ -3,10 +3,12 @@
 # the `github-actions` ecosystem is configured, because the repository's Node
 # tooling has no lockfile and no runtime dependencies to track.
 #
-# No auto-merge is configured, so every bump is a pull request that runs `ci`
-# before a human merges it. Grouping every action into one pull request means a
-# ci-workflows release arrives as a single reviewable bump rather than one pull
-# request per reference.
+# Merge lanes follow the standards dependabot-policy component: the
+# `vendor-actions` group (non-major only) is the auto-merge lane armed by
+# pr-automerge-dependabot.yml; every other PR is reviewed by hand and runs
+# `pr-require-checks` before a human merges it. A dependency joins the first
+# group that matches it, so majors fall through to the reviewed `github-actions`
+# group.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -24,15 +26,19 @@ updates:
     # Let a brand-new release settle before proposing it (supply-chain caution);
     # security-advisory updates bypass cooldown and still surface immediately.
     cooldown:
-      default-days: 7
-      # First-party melodic-software actions skip the supply-chain wait so our
-      # own ci-workflows fixes propagate without the cooldown delay.
-      exclude:
-        - "melodic-software/*"
+      default-days: 3
     groups:
+      vendor-actions:
+        patterns:
+          - actions/*
+          - github/*
+          - anthropics/*
+        update-types: [minor, patch]
       github-actions:
         patterns:
           - "*"
+    # Every melodic-software/ci-workflows ref (reusable workflows AND composite
+    # actions) moves only through deliberate reviewed PRs per the standards
+    # runner-policy selector-revision lockstep, so all of them are ignored here.
     ignore:
-      # The GitHub Actions conventions rename migrates this repo's ci-workflows pins deliberately; remove this ignore at that migration.
       - dependency-name: "melodic-software/ci-workflows/*"

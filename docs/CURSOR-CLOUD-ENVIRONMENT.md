@@ -16,7 +16,7 @@ is the marketplace/plugin validator CLI.
   - Marketplace validation (the primary run target): `npm run validate`, which
     executes `plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.mjs .`.
   - There is no separate lint step; `npm test` + `npm run validate` are the full
-    gate (mirrors `.github/workflows/ci.yml`).
+    gate (mirrors `.github/workflows/pr-require-checks.yml`).
 - Run the validator directly on any plugin or marketplace root, with optional
   `--json`:
   `node plugins/plugin-ops/skills/verify-plugin/scripts/validate-marketplace.mjs ./plugins/humanize --json`.
