@@ -17,8 +17,11 @@ skill-only plugin, uses no host variables (`CLAUDE_PLUGIN_ROOT`,
 and keeps no eval-fixture `SKILL.md` under `skills/`.
 Codex reads a `.claude-plugin` or `.cursor-plugin` manifest when no
 `.codex-plugin` manifest is present. It also accepts
-`$REPO_ROOT/.claude-plugin/marketplace.json` as a legacy-compatible marketplace,
-which you add with `codex plugin marketplace add`. Skills then load as
+`$REPO_ROOT/.claude-plugin/marketplace.json` or
+`$REPO_ROOT/.cursor-plugin/marketplace.json` as a legacy-compatible marketplace,
+which you add with `codex plugin marketplace add`; a Cursor catalog's local
+sources may omit the `./` prefix (`MARKETPLACE_MANIFEST_RELATIVE_PATHS` in
+`codex-rs/core-plugins/src/marketplace.rs`). Skills then load as
 `plugin:skill`. Sources: the packaging guide and `preserves_codex_claude_cursor_legacy_precedence` in
 `codex-rs/utils/plugins/src/plugin_namespace.rs` at `rust-v0.162.0`. For such a
 plugin, reshaping the manifest and marketplace rows below is optional. Run the
