@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { access } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
@@ -29,7 +30,7 @@ const requiredOfficialPointers = [
 ];
 
 test("the upstream index retains every required live OpenAI pointer", async () => {
-  const sourceMap = await read("docs/OFFICIAL-DOCS.md");
+  const sourceMap = await read("docs/official-docs.md");
   for (const pointer of requiredOfficialPointers) {
     // Anchored on the Markdown link syntax each pointer actually appears in,
     // `](URL)`, so the closing paren pins the end of the URL. A bare substring
@@ -37,7 +38,7 @@ test("the upstream index retains every required live OpenAI pointer", async () =
     assert.match(
       sourceMap,
       new RegExp(`\\]\\(${escapeRegExp(pointer)}\\)`, "u"),
-      `docs/OFFICIAL-DOCS.md must link exactly ${pointer}`,
+      `docs/official-docs.md must link exactly ${pointer}`,
     );
   }
   assert.match(sourceMap, /not a cached specification/u);
@@ -47,9 +48,9 @@ test("the upstream index retains every required live OpenAI pointer", async () =
 test("AGENTS enforces the documentation, context, architecture, and validation gates", async () => {
   const agents = await read("AGENTS.md");
   for (const path of [
-    "docs/OFFICIAL-DOCS.md",
-    "docs/PLUGIN-PHILOSOPHY.md",
-    "docs/MIGRATION-PLAYBOOK.md",
+    "docs/official-docs.md",
+    "docs/plugin-philosophy.md",
+    "docs/migration-playbook.md",
   ]) {
     assert.match(agents, new RegExp(escapeRegExp(path)));
   }
@@ -70,8 +71,8 @@ test("AGENTS enforces the documentation, context, architecture, and validation g
 
 test("philosophy and migration remain one consistent design contract", async () => {
   const [philosophy, migration] = await Promise.all([
-    read("docs/PLUGIN-PHILOSOPHY.md"),
-    read("docs/MIGRATION-PLAYBOOK.md"),
+    read("docs/plugin-philosophy.md"),
+    read("docs/migration-playbook.md"),
   ]);
 
   for (const heading of [
@@ -100,9 +101,9 @@ test("repository-owned Markdown pointers resolve", async () => {
   const files = [
     "AGENTS.md",
     "README.md",
-    "docs/OFFICIAL-DOCS.md",
-    "docs/PLUGIN-PHILOSOPHY.md",
-    "docs/MIGRATION-PLAYBOOK.md",
+    "docs/official-docs.md",
+    "docs/plugin-philosophy.md",
+    "docs/migration-playbook.md",
   ];
 
   for (const file of files) {
@@ -119,7 +120,7 @@ test("repository-owned Markdown pointers resolve", async () => {
 
 test("the capability cheat sheet lists every marketplace plugin", async () => {
   const [cheatSheet, marketplaceRaw] = await Promise.all([
-    read("docs/CODEX-CAPABILITY-CHEAT-SHEET.md"),
+    read("docs/codex-capability-cheat-sheet.md"),
     read(".agents/plugins/marketplace.json"),
   ]);
   const marketplace = JSON.parse(marketplaceRaw);
@@ -132,4 +133,31 @@ test("the capability cheat sheet lists every marketplace plugin", async () => {
       `cheat sheet marketplace table missing plugin ${name}`,
     );
   }
+});
+
+// docs/ file names are lower-kebab-case, exempting only README.md,
+// CHANGELOG.md, and INDEX.md, plus code files whose language owns their
+// casing. Paths differing only by case also fail: a case-insensitive checkout
+// writes the second over the first.
+test("every tracked file under docs/ has a lower-kebab-case name", () => {
+  const tracked = execFileSync("git", ["ls-files", "-z", "--", "docs/"], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  })
+    .split("\0")
+    .filter(Boolean);
+  assert.ok(tracked.length > 0, "git ls-files must list tracked files under docs/");
+
+  const exempt = new Set(["README.md", "CHANGELOG.md", "INDEX.md"]);
+  const codeExtensions = new Set(["py", "sh", "mjs", "js", "ps1"]);
+  const offenders = tracked.filter((path) => {
+    const base = path.slice(path.lastIndexOf("/") + 1);
+    if (exempt.has(base) || codeExtensions.has(base.split(".").pop())) return false;
+    return !/^[a-z0-9]+(?:[.-][a-z0-9]+)*\.[a-z0-9]+$/u.test(base);
+  });
+  assert.deepEqual(offenders, [], "rename these docs/ files to lower-kebab-case");
+
+  const folded = tracked.map((path) => path.toLowerCase());
+  const collisions = tracked.filter((_, index) => folded.indexOf(folded[index]) !== index);
+  assert.deepEqual(collisions, [], "these docs/ paths differ only by case from another");
 });

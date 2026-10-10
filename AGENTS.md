@@ -9,12 +9,12 @@ release work.
 Before taking any action that creates, changes, migrates, reviews, validates,
 installs, or publishes a plugin component:
 
-1. Read `README.md`, `docs/OFFICIAL-DOCS.md`, and all of
-   `docs/PLUGIN-PHILOSOPHY.md`.
-2. For a migration, also read all of `docs/MIGRATION-PLAYBOOK.md`, the source
+1. Read `README.md`, `docs/official-docs.md`, and all of
+   `docs/plugin-philosophy.md`.
+2. For a migration, also read all of `docs/migration-playbook.md`, the source
    component, its tests, and the source-host documentation relevant to it.
 3. Open the live official pages identified for the affected surface in
-   `docs/OFFICIAL-DOCS.md`. Do not rely on remembered behavior or a copied
+   `docs/official-docs.md`. Do not rely on remembered behavior or a copied
    documentation snapshot.
 4. Inspect the installed `codex ... --help` output when CLI behavior is part of
    the change.
@@ -24,7 +24,7 @@ installs, or publishes a plugin component:
 Read only the sections relevant to the action, but do not skip the preflight.
 When live official documentation and verified product behavior disagree, stop
 contract-changing work, record the discrepancy, and prefer the narrower
-behavior until it is resolved. Update `docs/OFFICIAL-DOCS.md` when a pointer
+behavior until it is resolved. Update `docs/official-docs.md` when a pointer
 moves or a new native surface becomes relevant.
 
 ## Source precedence
@@ -132,7 +132,7 @@ pending.
 
 ## Cursor Cloud specific instructions
 
-Read [the Cursor Cloud environment notes](docs/CURSOR-CLOUD-ENVIRONMENT.md)
+Read [the Cursor Cloud environment notes](docs/cursor-cloud-environment.md)
 when working in a Cursor Cloud VM: toolchain, the test, validate, and run
 commands, and the `npm install` caveat.
 
@@ -148,14 +148,14 @@ Each line names a rule CI does not enforce; the linked file states it in full.
 - Live documentation preflight, with the consulted URLs and verification date
   recorded in the pull request: [preflight](#mandatory-documentation-preflight).
 - Repository prose links upstream Codex documentation and never copies its
-  prose or examples: [documentation discipline](docs/PLUGIN-PHILOSOPHY.md#documentation-discipline).
+  prose or examples: [documentation discipline](docs/plugin-philosophy.md#documentation-discipline).
 - Plugins carry no user, organization, machine, sibling-plugin, or
   source-host dependency, and use relative paths only:
-  [release gates](docs/PLUGIN-PHILOSOPHY.md#release-gates).
+  [release gates](docs/plugin-philosophy.md#release-gates).
 - `agents/openai.yaml` is the skill's sidecar, not a custom agent definition,
   and a declared MCP dependency installs nothing:
   [authoring and packaging](#authoring-and-packaging).
 - Writes preserve unrelated changes, and hooks and external writes stay behind
-  Codex approval boundaries: [safety](docs/PLUGIN-PHILOSOPHY.md#safety-and-user-control).
+  Codex approval boundaries: [safety](docs/plugin-philosophy.md#safety-and-user-control).
 - A migration gives every source component one recorded disposition and omits
-  none silently: [migration playbook](docs/MIGRATION-PLAYBOOK.md#4-classify-every-component).
+  none silently: [migration playbook](docs/migration-playbook.md#4-classify-every-component).
