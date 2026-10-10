@@ -96,8 +96,13 @@ those gates into a component ledger and isolation test matrix.
 the relevant live pages and record their URLs and verification date; do not
 copy upstream documentation or treat an old host manifest as authoritative.
 
-Use Codex's built-in `$plugin-creator` and `$skill-creator` workflows to scaffold
-new packages, then run:
+Scaffold a new plugin by hand from the
+[plugin packaging guide](https://developers.openai.com/plugins/build/plugins):
+a plugin manifest plus a marketplace entry. Codex CLI 0.159.0 removed the bundled
+`$plugin-creator` skill. The guide still offers `@plugin-creator` in ChatGPT Work
+mode and `$plugin-creator` on other Codex surfaces; check the page before relying
+on either. Scaffold each skill with Codex's built-in
+`$skill-creator`, then run:
 
 ```powershell
 npm test
