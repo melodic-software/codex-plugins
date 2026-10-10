@@ -20,7 +20,7 @@ Start a new Codex task after installation so the new skills are discovered.
 
 ## Quick reference
 
-Use the [Codex capability cheat sheet](docs/CODEX-CAPABILITY-CHEAT-SHEET.md)
+Use the [Codex capability cheat sheet](docs/codex-capability-cheat-sheet.md)
 to distinguish built-in system skills, official bundled plugins, curated
 plugins, and this personal marketplace. It includes natural-language and
 explicit `$skill` or `$plugin:skill` prompt examples.
@@ -34,7 +34,9 @@ Dogfoods the marketplace by providing skills to:
 - add and install marketplace sources with the native Codex CLI;
 - refresh marketplaces and reinstall changed plugins;
 - validate catalogs, manifests, skills, and portable path contracts; and
-- translate Claude Code or Cursor plugins into Codex-native packages.
+- translate Claude Code or Cursor plugins into Codex-native packages, or
+  install a skill-only plugin that uses no host variables as it is, through
+  the native-load fast path.
 
 ### `codex-operations`
 
@@ -76,21 +78,21 @@ Provides `humanize`, a focused writing skill that:
 plugins/<name>/
   .codex-plugin/plugin.json
   skills/<skill-name>/SKILL.md
-docs/PLUGIN-PHILOSOPHY.md
-docs/MIGRATION-PLAYBOOK.md
-docs/OFFICIAL-DOCS.md
-docs/CODEX-CAPABILITY-CHEAT-SHEET.md
+docs/plugin-philosophy.md
+docs/migration-playbook.md
+docs/official-docs.md
+docs/codex-capability-cheat-sheet.md
 ```
 
 ## Contributing
 
 Complete the mandatory live-documentation preflight in [AGENTS.md](AGENTS.md)
-before any plugin action. The [plugin philosophy](docs/PLUGIN-PHILOSOPHY.md)
+before any plugin action. The [plugin philosophy](docs/plugin-philosophy.md)
 defines repository-context discovery, native-extension, portability, and
-architecture gates. The [migration playbook](docs/MIGRATION-PLAYBOOK.md) turns
+architecture gates. The [migration playbook](docs/migration-playbook.md) turns
 those gates into a component ledger and isolation test matrix.
 
-[OFFICIAL-DOCS.md](docs/OFFICIAL-DOCS.md) is a maintained pointer index. Open
+[official-docs.md](docs/official-docs.md) is a maintained pointer index. Open
 the relevant live pages and record their URLs and verification date; do not
 copy upstream documentation or treat an old host manifest as authoritative.
 

@@ -10,8 +10,8 @@ dates. Do not read one date as covering the other.
 
 | Claim | Basis | Last verified |
 | --- | --- | --- |
-| Invocation grammar and CLI syntax | Codex CLI source (`openai/codex`, `main`) | 2026-08-30 |
-| Built-in system skill roster | Codex CLI source: skills embedded in the binary | 2026-08-30 |
+| Invocation grammar and CLI syntax | Installed Codex CLI 0.162.0 `--help` and the official command reference | 2026-10-10 |
+| Built-in system skill roster | Codex CLI source (`openai/codex`, `main`): skills embedded in the binary | 2026-10-10 |
 | Bundled and runtime plugin roster, and the `latex` example | One operator's installed environment | 2026-08-05, **not re-verified since** |
 
 The bundled and runtime plugin table below is an environment snapshot, not an
@@ -52,7 +52,6 @@ skills, not plugins.
 | --- | --- | --- |
 | Image generation | `Create a wide illustrated banner for this README.` | `$imagegen Create a wide illustrated banner for this README.` |
 | Official OpenAI docs | `Check the current official Codex docs and explain how hooks work.` | `$openai-docs Check the current official Codex docs and explain how hooks work.` |
-| Plugin creation | `Create a Codex plugin for this reusable workflow.` | `$plugin-creator Create a Codex plugin for this reusable workflow.` |
 | Skill creation | `Turn this repeated release checklist into a skill.` | `$skill-creator Turn this repeated release checklist into a skill.` |
 | Skill installation | `Install the skill from openai/skills.` | `$skill-installer Install the skill from openai/skills.` |
 | Delegated code review | `Review my uncommitted changes against the base branch.` | `$review-agent Review my uncommitted changes against the base branch.` |
@@ -64,6 +63,29 @@ comments.
 `$imagegen` is the important special case: it is built-in image generation,
 not an image-generation marketplace plugin. Attach or identify reference images
 and state what must change and what must remain fixed when editing.
+
+Codex CLI 0.159.0 removed the bundled `plugin-creator` skill
+([#48604](https://github.com/openai/codex/pull/48604)), so `$plugin-creator`
+no longer resolves from the CLI binary. The
+[plugin packaging guide](https://developers.openai.com/plugins/build/plugins)
+still names `@plugin-creator` as a built-in in ChatGPT; check that page before
+relying on it.
+
+## Plugin-author changes since 0.143.0
+
+As of Codex CLI 0.162.1 (2026-10-10), these releases changed what a plugin
+author ships or tests. The [release notes](https://github.com/openai/codex/releases)
+hold the detail; recheck them on each new minor release.
+
+| Release | Change |
+| --- | --- |
+| 0.145.0 | `/import` migrates Claude Code and Cursor plugins, MCP servers, and commands |
+| 0.146.0, 0.147.0 | Portable Agent Plugins: a root `plugin.json` is recognized, with `.codex-plugin/plugin.json` kept as a fallback ([packaging guide](https://developers.openai.com/plugins/build/plugins)) |
+| 0.153.0 | `codex plugin` lists, installs, and removes plugins from remote marketplaces |
+| 0.154.0 | Running sessions pick up newly installed plugin tools and refresh skills and hooks after a plugin upgrade |
+| 0.154.0 | `codex mcp-server` is removed; the [command reference](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) points at the app server instead |
+| 0.156.0 | `/usage` reports plugin and skill activity |
+| 0.159.0 | The bundled `plugin-creator` skill is removed |
 
 ## Official bundled and runtime plugins
 

@@ -2,7 +2,7 @@
 
 Use this playbook to port a capability between Claude Code, Cursor, Codex, or a
 legacy Codex package. Port the user capability and its evidence, not the source
-host's packaging assumptions. The [plugin philosophy](PLUGIN-PHILOSOPHY.md) is
+host's packaging assumptions. The [plugin philosophy](plugin-philosophy.md) is
 binding throughout.
 
 ## Definition of done
@@ -27,7 +27,7 @@ Before editing:
 2. Read the source manifest, marketplace entry, skills, agents, hooks, scripts,
    MCP/app configuration, assets, tests, and user documentation completely.
 3. Complete the live-documentation preflight in `AGENTS.md` for both the source
-   host and Codex. Use [OFFICIAL-DOCS.md](OFFICIAL-DOCS.md) as the pointer index.
+   host and Codex. Use [official-docs.md](official-docs.md) as the pointer index.
 4. Inspect current target CLI help for every command the target package will
    invoke.
 5. Record links and the verification date. Do not copy upstream prose into the
