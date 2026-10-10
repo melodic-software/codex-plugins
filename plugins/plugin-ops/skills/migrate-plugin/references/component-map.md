@@ -19,9 +19,12 @@ Codex reads a `.claude-plugin` or `.cursor-plugin` manifest when no
 `.codex-plugin` manifest is present. It also accepts
 `$REPO_ROOT/.claude-plugin/marketplace.json` or
 `$REPO_ROOT/.cursor-plugin/marketplace.json` as a legacy-compatible marketplace,
-which you add with `codex plugin marketplace add`; a Cursor catalog's local
-sources may omit the `./` prefix (`MARKETPLACE_MANIFEST_RELATIVE_PATHS` in
-`codex-rs/core-plugins/src/marketplace.rs`). Skills then load as
+which you add with `codex plugin marketplace add`
+(`MARKETPLACE_MANIFEST_RELATIVE_PATHS` in
+`codex-rs/core-plugins/src/marketplace.rs`). Local sources resolve against the
+marketplace root either way: a Cursor catalog's source may omit the `./`
+prefix, while any other catalog fails to load a source without it
+(`resolve_local_plugin_source_path`, same file). Skills then load as
 `plugin:skill`. Sources: the packaging guide and `preserves_codex_claude_cursor_legacy_precedence` in
 `codex-rs/utils/plugins/src/plugin_namespace.rs` at `rust-v0.162.0`. For such a
 plugin, reshaping the manifest and marketplace rows below is optional. Run the
