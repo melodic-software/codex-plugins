@@ -12,7 +12,7 @@ const paths = skillPaths("plugin-ops");
 test("the marketplace exposes the Plugin Ops plugin", async () => {
   await assertMarketplacePlugin({
     name: "plugin-ops",
-    version: "0.2.0",
+    version: "0.2.1",
     category: "Developer Tools",
   });
 });
@@ -54,8 +54,8 @@ test("verify-plugin requires preflight, validator, and behavioral review", async
 test("migrate-plugin follows the playbook ledger and isolation testing", async () => {
   const { compactSkill } = await readSkillContract(paths, "migrate-plugin", "Migrate Plugin");
 
-  assert.match(compactSkill, /docs\/PLUGIN-PHILOSOPHY\.md/u);
-  assert.match(compactSkill, /docs\/MIGRATION-PLAYBOOK\.md/u);
+  assert.match(compactSkill, /docs\/plugin-philosophy\.md/u);
+  assert.match(compactSkill, /docs\/migration-playbook\.md/u);
   assert.match(compactSkill, /references\/component-map\.md/u);
   assert.match(compactSkill, /\*\*keep\*\*.*\*\*reshape\*\*.*\*\*replace\*\*.*\*\*drop\*\*/u);
   assert.match(compactSkill, /source marketplace and sibling plugins disabled/u);

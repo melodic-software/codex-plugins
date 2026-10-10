@@ -2,7 +2,7 @@
 
 This is the durable design policy for every plugin, skill, hook, script, MCP
 mapping, and marketplace entry in this repository. The
-[migration playbook](MIGRATION-PLAYBOOK.md) applies it when translating a
+[migration playbook](migration-playbook.md) applies it when translating a
 capability from another host.
 
 `MUST` and `MUST NOT` are release gates. `SHOULD` describes the default; a pull
@@ -161,7 +161,7 @@ failure.
 ## Documentation discipline
 
 Every plugin action MUST complete the live-documentation preflight in
-`AGENTS.md`. [OFFICIAL-DOCS.md](OFFICIAL-DOCS.md) contains upstream pointers,
+`AGENTS.md`. [official-docs.md](official-docs.md) contains upstream pointers,
 not copied rules. Pull requests record the live URLs and verification date.
 
 Repository prose SHOULD explain our decision, boundary, and test—not restate an
