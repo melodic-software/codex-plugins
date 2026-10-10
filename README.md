@@ -35,8 +35,8 @@ Dogfoods the marketplace by providing skills to:
 - refresh marketplaces and reinstall changed plugins;
 - validate catalogs, manifests, skills, and portable path contracts; and
 - translate Claude Code or Cursor plugins into Codex-native packages, or
-  install a skill-only plugin that uses no host variables as it is, through
-  the native-load fast path.
+  install a skill-only plugin that uses no host variables or `!` context
+  injection as it is, through the native-load fast path.
 
 ### `codex-operations`
 

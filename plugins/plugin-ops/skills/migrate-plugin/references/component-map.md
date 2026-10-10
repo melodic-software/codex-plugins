@@ -12,8 +12,9 @@ on each Codex minor release, or when the
 ## Native-load fast path
 
 Codex loads a Claude or Cursor plugin without changes when the plugin is a
-skill-only plugin and uses no host variables (`CLAUDE_PLUGIN_ROOT`,
-`CLAUDE_SKILL_DIR`, `${user_config.*}`) and no `!` dynamic context injection.
+skill-only plugin, uses no host variables (`CLAUDE_PLUGIN_ROOT`,
+`CLAUDE_SKILL_DIR`, `${user_config.*}`) and no `!` dynamic context injection,
+and keeps no eval-fixture `SKILL.md` under `skills/`.
 Codex reads a `.claude-plugin` or `.cursor-plugin` manifest when no
 `.codex-plugin` manifest is present. It also accepts
 `$REPO_ROOT/.claude-plugin/marketplace.json` as a legacy-compatible marketplace,
@@ -21,8 +22,9 @@ which you add with `codex plugin marketplace add`. Skills then load as
 `plugin:skill`. Sources: the packaging guide and `preserves_codex_claude_cursor_legacy_precedence` in
 `codex-rs/utils/plugins/src/plugin_namespace.rs` at `rust-v0.162.0`. For such a
 plugin, reshaping the manifest and marketplace rows below is optional. Run the
-isolation tests either way. Codex scans `skills/` recursively, so eval-fixture
-`SKILL.md` files load as skills. Move them out of `skills/`.
+isolation tests either way. Codex scans `skills/` recursively, so an
+eval-fixture `SKILL.md` there loads as a skill; move fixtures out of `skills/`
+first.
 
 | Source component | Codex disposition |
 | --- | --- |

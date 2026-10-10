@@ -73,7 +73,7 @@ relying on it.
 
 ## Plugin-author changes since 0.143.0
 
-As of Codex CLI 0.162.1 (2026-10-10), these releases changed what a plugin
+As of the Codex CLI 0.162.1 release notes (read 2026-10-10), these releases changed what a plugin
 author ships or tests. The [release notes](https://github.com/openai/codex/releases)
 hold the detail; recheck them on each new minor release.
 
