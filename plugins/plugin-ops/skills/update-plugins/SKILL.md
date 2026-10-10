@@ -33,15 +33,18 @@ installed copies must change.
    plugin. Prefer the `@` form so the source is visible in the command itself.
 
 5. For a local plugin under active development, skip the upgrade (it refreshes
-   Git sources only) and reinstall to drop the cached copy:
+   Git sources only) and reinstall to drop the cached copy. `remove` deletes the
+   working install and its cache, so first run `$plugin-ops:verify-plugin`'s
+   `validate-marketplace.mjs` on the local source and stop if it fails. Then:
 
    ```text
    codex plugin remove <plugin>@<marketplace>
    codex plugin add <plugin>@<marketplace>
    ```
 
-   Do not increment release versions or hand-edit marketplace configuration
-   merely to invalidate cache.
+   If `add` fails, the plugin is left uninstalled: report that, fix the source,
+   and rerun `add`. Do not increment release versions or hand-edit marketplace
+   configuration merely to invalidate cache.
 6. Verify the resulting plugin listing and installation result. Start a new task
    before testing changed skills, hooks, or MCP tools.
 

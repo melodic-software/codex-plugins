@@ -83,8 +83,9 @@ paths, tool installation, subscription, or credentials as a consumer default.
 - Scaffold or update plugins by hand from the
   [plugin packaging guide](https://developers.openai.com/plugins/build/plugins),
   and skills with `$skill-creator`. Codex CLI 0.159.0 removed `$plugin-creator`;
-  the guide still offers it on ChatGPT Work mode and other Codex surfaces, so
-  check the page before relying on it.
+  the guide still offers `@plugin-creator` in ChatGPT Work mode and
+  `$plugin-creator` on other Codex surfaces, so check the page before relying
+  on either.
 - Keep every skill focused on one recognizable goal. Put essential procedure in
   `SKILL.md` and detailed variants in directly linked `references/` files.
 - Keep `agents/openai.yaml` aligned with its skill. It is the harness-facing
@@ -113,7 +114,8 @@ npm test
 npm run validate
 ```
 
-Also run the built-in plugin validator, the skill quick validator for every
+`npm run validate` is the plugin and catalog validator; Codex CLI 0.159.0
+removed the built-in one. Also run the `$skill-creator` quick validator for every
 changed skill, and behavioral tests for direct, indirect, negative, missing
 dependency, and repository-context cases. Migration validation must use a new
 Codex task with the source marketplace and sibling plugins disabled.

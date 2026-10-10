@@ -160,8 +160,9 @@ write to a broader scope, or change the user goal.
 
 ## 8. Validate the target in isolation
 
-Run the repository validator, built-in plugin validator, and skill quick
-validator. Then install the target from a local marketplace and start a new
+Run the repository validator (`validate-marketplace.mjs`, which replaces the
+built-in plugin validator Codex CLI 0.159.0 removed) and the `$skill-creator`
+quick validator. Then install the target from a local marketplace and start a new
 Codex task with the source marketplace and sibling plugins disabled.
 
 Exercise this matrix:
