@@ -121,8 +121,9 @@ to preserve the source file shape.
 
 Write the target package's manifest and marketplace entry by hand from the
 [plugin packaging guide](https://developers.openai.com/plugins/build/plugins);
-Codex CLI 0.159.0 removed the bundled `$plugin-creator` skill, and the guide's
-`@plugin-creator` runs only in ChatGPT Work mode. Use `$skill-creator` for each
+Codex CLI 0.159.0 removed the bundled `$plugin-creator` skill. The guide still
+offers `@plugin-creator` in ChatGPT Work mode and `$plugin-creator` on other
+Codex surfaces; check the page before relying on either. Use `$skill-creator` for each
 skill; it is a built-in system skill, so it takes the bare `$name` form. Use
 the installed `$plugin-ops:migrate-plugin` component map as a checklist, then
 override it when current official documentation differs. Skills that ship inside

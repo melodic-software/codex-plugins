@@ -99,8 +99,9 @@ copy upstream documentation or treat an old host manifest as authoritative.
 Scaffold a new plugin by hand from the
 [plugin packaging guide](https://developers.openai.com/plugins/build/plugins):
 a plugin manifest plus a marketplace entry. Codex CLI 0.159.0 removed the bundled
-`$plugin-creator` skill; the guide's `@plugin-creator` is a ChatGPT Work mode
-skill, not a CLI one. Scaffold each skill with Codex's built-in
+`$plugin-creator` skill. The guide still offers `@plugin-creator` in ChatGPT Work
+mode and `$plugin-creator` on other Codex surfaces; check the page before relying
+on either. Scaffold each skill with Codex's built-in
 `$skill-creator`, then run:
 
 ```powershell
