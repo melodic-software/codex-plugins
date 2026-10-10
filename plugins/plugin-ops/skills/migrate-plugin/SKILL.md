@@ -24,8 +24,10 @@ assumptions.
 5. Identify the cohesive core, inbound ports for intent and repository context,
    outbound ports for files, shell, MCP, connectors, network, UI, and writes,
    and the smallest Codex-native adapter for each port.
-6. Scaffold the Codex package with `$plugin-creator` and each skill with
-   `$skill-creator`. Never add a second host manifest to the source plugin.
+6. Write the Codex package's manifest and marketplace entry by hand from the
+   current plugin packaging guide (Codex CLI 0.159.0 removed `$plugin-creator`),
+   and scaffold each skill with `$skill-creator`. Never add a second host
+   manifest to the source plugin.
 7. Rewrite host-specific hooks, MCP wiring, agents, settings, paths, tools, and
    lifecycle behavior using current Codex contracts. Preserve domain logic only
    after removing user, company, machine, source-install, and sibling-plugin

@@ -80,8 +80,10 @@ paths, tool installation, subscription, or credentials as a consumer default.
 
 ## Authoring and packaging
 
-- Scaffold or update plugins with `$plugin-creator` and skills with
-  `$skill-creator` when those workflows are available.
+- Scaffold or update plugins by hand from the
+  [plugin packaging guide](https://developers.openai.com/plugins/build/plugins),
+  and skills with `$skill-creator`. Codex CLI 0.159.0 removed `$plugin-creator`;
+  the guide's `@plugin-creator` runs only in ChatGPT Work mode.
 - Keep every skill focused on one recognizable goal. Put essential procedure in
   `SKILL.md` and detailed variants in directly linked `references/` files.
 - Keep `agents/openai.yaml` aligned with its skill. It is the harness-facing

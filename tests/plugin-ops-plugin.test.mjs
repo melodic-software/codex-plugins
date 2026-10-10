@@ -12,7 +12,7 @@ const paths = skillPaths("plugin-ops");
 test("the marketplace exposes the Plugin Ops plugin", async () => {
   await assertMarketplacePlugin({
     name: "plugin-ops",
-    version: "0.2.1",
+    version: "0.2.2",
     category: "Developer Tools",
   });
 });
@@ -36,7 +36,8 @@ test("update-plugins refreshes sources then reinstalls changed plugins", async (
   assert.match(compactSkill, /Refresh the configured source first/u);
   assert.match(compactSkill, /codex plugin marketplace upgrade/u);
   assert.match(compactSkill, /Do not assume a marketplace is Git-backed/u);
-  assert.match(compactSkill, /\$plugin-creator/u);
+  assert.match(compactSkill, /codex plugin remove <plugin>@<marketplace>/u);
+  assert.doesNotMatch(compactSkill, /\$plugin-creator/u);
 });
 
 test("verify-plugin requires preflight, validator, and behavioral review", async () => {

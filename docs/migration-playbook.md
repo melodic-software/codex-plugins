@@ -119,8 +119,11 @@ to preserve the source file shape.
 
 ## 6. Rebuild natively
 
-Use `$plugin-creator` for the target package and `$skill-creator` for each
-skill; those are built-in system skills, so they take the bare `$name` form. Use
+Write the target package's manifest and marketplace entry by hand from the
+[plugin packaging guide](https://developers.openai.com/plugins/build/plugins);
+Codex CLI 0.159.0 removed the bundled `$plugin-creator` skill, and the guide's
+`@plugin-creator` runs only in ChatGPT Work mode. Use `$skill-creator` for each
+skill; it is a built-in system skill, so it takes the bare `$name` form. Use
 the installed `$plugin-ops:migrate-plugin` component map as a checklist, then
 override it when current official documentation differs. Skills that ship inside
 a plugin are loaded under that plugin's namespace, so they are invoked as

@@ -32,9 +32,16 @@ installed copies must change.
    `codex plugin add <plugin> --marketplace <marketplace>` selects the same
    plugin. Prefer the `@` form so the source is visible in the command itself.
 
-5. For a local plugin under active development, use the built-in
-   `$plugin-creator` cachebuster/reinstall workflow. Do not increment release
-   versions or hand-edit marketplace configuration merely to invalidate cache.
+5. For a local plugin under active development, skip the upgrade (it refreshes
+   Git sources only) and reinstall to drop the cached copy:
+
+   ```text
+   codex plugin remove <plugin>@<marketplace>
+   codex plugin add <plugin>@<marketplace>
+   ```
+
+   Do not increment release versions or hand-edit marketplace configuration
+   merely to invalidate cache.
 6. Verify the resulting plugin listing and installation result. Start a new task
    before testing changed skills, hooks, or MCP tools.
 

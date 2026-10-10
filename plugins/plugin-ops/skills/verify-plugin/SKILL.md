@@ -49,8 +49,9 @@ contract or repository-adaptation design is correct.
    - secrets remain outside the package;
    - unsupported platforms and missing tools fail safely; and
    - non-retryable or partial-failure behavior is explicit.
-8. Run the built-in `$plugin-creator` validator and `$skill-creator` quick
-   validator for every changed skill when those workflows are available.
+8. Run the `$skill-creator` quick validator for every changed skill. Codex CLI
+   0.159.0 removed the `$plugin-creator` validator, so the package and catalog
+   check is `validate-marketplace.mjs` from step 3.
 9. Exercise direct, indirect, negative, incomplete, root/nested context,
    missing-dependency, platform, existing-change, partial-failure, and isolated-
    install cases. For migrations, disable source and sibling marketplaces.
