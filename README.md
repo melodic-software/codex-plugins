@@ -42,9 +42,11 @@ Dogfoods the marketplace by providing skills to:
 
 Provides portable skills to:
 
-- coordinate multi-task, multi-agent, and long-running Codex work; and
+- coordinate multi-task, multi-agent, and long-running Codex work;
 - find evidence-backed opportunities for reusable skills from bounded local
-  session data without modifying skills automatically.
+  session data without modifying skills automatically; and
+- report what Codex CLI releases since a recorded read marker change in the
+  active repository, without editing it.
 
 ### `scheduled-tasks`
 

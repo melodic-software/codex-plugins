@@ -24,6 +24,7 @@ Read the smallest complete set that covers the affected surface.
 | Durable repository instruction discovery | [Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) |
 | Lifecycle extension and trust | [Hooks](https://learn.chatgpt.com/docs/hooks) |
 | Installation and supported plugin surfaces | [Use plugins](https://learn.chatgpt.com/docs/plugins) |
+| Codex CLI release notes, per stable `rust-v<version>` tag | [openai/codex releases](https://github.com/openai/codex/releases) |
 | Installed CLI inventory and `/skills` or `/plugins` behavior | [Codex CLI command reference](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) |
 | Scheduled task behavior and management | [Scheduled tasks](https://learn.chatgpt.com/docs/automations) |
 | Native import behavior from another agent | [Import from another agent](https://learn.chatgpt.com/docs/import) |

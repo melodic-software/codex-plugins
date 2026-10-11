@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 
 // This module lives in `tests/`, the same directory as every test file that
@@ -103,4 +104,22 @@ export const readSkillContract = async (paths, name, displayName) => {
   );
 
   return { skill, metadata, compactSkill: compact(skill) };
+};
+
+/**
+ * The first Python 3 launcher that answers `--version`, as `{ command, prefix }`,
+ * or null. Tests that run a bundled Python script skip when it is null.
+ */
+export const findPython = () => {
+  const candidates = [
+    { command: "python", prefix: [] },
+    { command: "python3", prefix: [] },
+    { command: "py", prefix: ["-3"] },
+  ];
+  return (
+    candidates.find(
+      ({ command, prefix }) =>
+        spawnSync(command, [...prefix, "--version"], { encoding: "utf8" }).status === 0,
+    ) ?? null
+  );
 };
