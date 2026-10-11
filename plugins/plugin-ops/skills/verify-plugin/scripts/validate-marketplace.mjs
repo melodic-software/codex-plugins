@@ -123,12 +123,18 @@ async function readText(file, result) {
 async function readJson(file, result) {
   const text = await readText(file, result);
   if (text === null) return null;
+  let value;
   try {
-    return JSON.parse(text);
+    value = JSON.parse(text);
   } catch (error) {
     result.errors.push({ code: "invalid-json", file, message: error.message });
     return null;
   }
+  if (!isObject(value)) {
+    result.errors.push({ code: "invalid-json", file, message: "Expected a JSON object." });
+    return null;
+  }
+  return value;
 }
 
 function isDeclared(value) {
@@ -148,7 +154,8 @@ function resolveContained(root, relativePath, code, file, result, allowBare = fa
     result.errors.push({ code, file, message: `Path must be a string relative to the package root, got ${relativePath === null ? "null" : typeof relativePath}.` });
     return null;
   }
-  if (allowBare && !relativePath.startsWith("./")) relativePath = `./${relativePath}`;
+  // Codex rejects an absolute source in every catalog, so only a relative one gains the prefix.
+  if (allowBare && !relativePath.startsWith("./") && !path.isAbsolute(relativePath)) relativePath = `./${relativePath}`;
   if (!relativePath.startsWith("./")) {
     result.errors.push({ code, file, message: "Path must be relative to the package root and start with './'." });
     return null;
@@ -286,14 +293,16 @@ function validateIdentity(manifest, manifestFile, expectedName, namePattern, rep
   ]) {
     if (typeof value !== "string" || value.trim() === "") report.push({ code, file: manifestFile, message: "Expected a non-empty string." });
   }
-  if (manifest.name && !namePattern.test(manifest.name)) {
+  // A non-string value was reported above; checking it further would only crash.
+  const name = typeof manifest.name === "string" ? manifest.name : undefined;
+  if (name && !namePattern.test(name)) {
     result.errors.push({ code: "invalid-plugin-name", file: manifestFile, message: "Plugin name must be kebab-case (an Agent Plugins name may also contain dots)." });
   }
-  if (manifest.version && !SEMVER_PATTERN.test(manifest.version)) {
+  if (typeof manifest.version === "string" && manifest.version && !SEMVER_PATTERN.test(manifest.version)) {
     report.push({ code: "invalid-plugin-version", file: manifestFile, message: "Plugin version must use strict semantic versioning." });
   }
-  if (expectedName && manifest.name !== expectedName) {
-    result.errors.push({ code: "plugin-name-mismatch", file: manifestFile, message: `Marketplace and folder expect '${expectedName}', manifest declares '${manifest.name}'.` });
+  if (expectedName && name !== expectedName) {
+    result.errors.push({ code: "plugin-name-mismatch", file: manifestFile, message: `Marketplace and folder expect '${expectedName}', manifest declares '${name ?? "missing"}'.` });
   }
 }
 
@@ -329,11 +338,15 @@ async function validateLegacyManifest(pluginRoot, manifest, manifestFile, format
   // The published manifest contract declares `mcpServers` as a './'-relative
   // path to an .mcp.json file; the server map itself lives inside that file.
   // Anything else is reported as an invalid path rather than skipped silently.
-  if (isDeclared(manifest.mcpServers)) {
+  // Codex also reads an inline server map and a list of skills paths, which a
+  // Claude or Cursor manifest may use, so only a Codex manifest must avoid them.
+  const fallback = format !== "codex";
+  if (isDeclared(manifest.mcpServers) && !(fallback && isObject(manifest.mcpServers))) {
     const mcpPath = resolveContained(pluginRoot, manifest.mcpServers, "invalid-mcp-path", manifestFile, result);
     await requireDeclaredFile(mcpPath, "missing-mcp-manifest", manifestFile, "Declared MCP file does not exist.", result);
   }
-  if (isDeclared(manifest.skills)) await validateSkills(pluginRoot, manifest.skills, manifestFile, result, skillNames);
+  const skillsPaths = fallback && Array.isArray(manifest.skills) ? manifest.skills : isDeclared(manifest.skills) ? [manifest.skills] : [];
+  for (const skillsPath of skillsPaths) await validateSkills(pluginRoot, skillsPath, manifestFile, result, skillNames);
 }
 
 async function validateAgentManifest(pluginRoot, manifest, manifestFile, overlay, expectedName, result, skillNames) {
@@ -379,8 +392,11 @@ async function validatePlugin(pluginRoot, expectedName, result, skillNames) {
   let overlay = null;
   for (const legacy of LEGACY_MANIFESTS.slice(resolved.rank)) {
     const file = path.join(pluginRoot, legacy.path);
-    if ((await entryState(file, result)) === ABSENT) continue;
+    const state = await entryState(file, result);
+    if (state === ABSENT) continue;
     if (resolved.format === "agent-plugin" && legacy.format === "codex" && !isObject(manifest.extensions?.[CODEX_EXTENSION])) {
+      // Codex skips an overlay it cannot read as a file, but fails on one that does not parse.
+      if (state !== FILE) continue;
       const overlayManifest = await readJson(file, result);
       if (overlayManifest) {
         overlay = { file, manifest: overlayManifest };
@@ -416,8 +432,9 @@ async function validateMarketplaceRoot(root, catalog, result, skillNames) {
 
   const names = new Set();
   for (const plugin of marketplace.plugins) {
-    const name = plugin?.name;
-    requireString(name, "missing-marketplace-plugin-name", marketplaceFile, result);
+    // A non-string name is reported once below and then treated as absent.
+    const name = typeof plugin?.name === "string" ? plugin.name : undefined;
+    requireString(plugin?.name, "missing-marketplace-plugin-name", marketplaceFile, result);
     if (name) {
       if (names.has(name)) {
         result.errors.push({ code: "duplicate-marketplace-plugin", file: marketplaceFile, message: `Duplicate plugin entry '${name}'.` });
@@ -465,6 +482,11 @@ async function resolveCatalog(root, result) {
     const state = await pathState(file, result);
     if (state === UNREADABLE) return { stopped: true };
     if (state === ABSENT) continue;
+    // Codex takes only a regular file (following symlinks) and moves past anything else.
+    if (!(await stat(file)).isFile()) {
+      result.warnings.push({ code: "skipped-marketplace-catalog", file, message: "Codex skips this catalog path because it is not a file." });
+      continue;
+    }
     if (!winner) {
       winner = { file, format: candidate.format };
       continue;

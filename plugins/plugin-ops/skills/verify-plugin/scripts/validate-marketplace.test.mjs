@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -176,11 +176,12 @@ test("rejects an unparsable marketplace file", async (t) => {
   assert.deepEqual(errorCodes(result), new Set(["invalid-json"]));
 });
 
-test("reports an unreadable marketplace file separately from invalid JSON", async (t) => {
+test("skips a catalog slot that is not a file, as Codex does", async (t) => {
   const root = await tempRoot(t);
   await mkdir(path.join(root, ".agents", "plugins", "marketplace.json"), { recursive: true });
   const result = await validateTarget(root);
-  assert.deepEqual(errorCodes(result), new Set(["unreadable-file"]));
+  assert.deepEqual(errorCodes(result), new Set(["unknown-target"]));
+  assert.deepEqual(warningCodes(result), new Set(["skipped-marketplace-catalog"]));
 });
 
 test("requires a marketplace name", async (t) => {
@@ -643,7 +644,80 @@ test("a non-regular root plugin.json hides every lower manifest, as in Codex", a
   assert.equal(result.errors[0].file, path.join(pluginRoot, "plugin.json"));
 });
 
+const symlinkSupported = process.platform !== "win32";
+
+test("a symlinked root plugin.json hides every lower manifest", { skip: !symlinkSupported }, async (t) => {
+  const pluginRoot = await layoutPlugin(t, { ".codex-plugin/plugin.json": pluginManifest() });
+  await writeJson(path.join(pluginRoot, "..", "target.json"), agentManifest());
+  await symlink(path.join(pluginRoot, "..", "target.json"), path.join(pluginRoot, "plugin.json"));
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(errorCodes(result), new Set(["missing-plugin-manifest"]));
+  assert.equal(result.errors[0].file, path.join(pluginRoot, "plugin.json"));
+});
+
+test("a symlinked .codex-plugin manifest hides the Claude manifest below it", { skip: !symlinkSupported }, async (t) => {
+  const pluginRoot = await layoutPlugin(t, { ".claude-plugin/plugin.json": claudeManifest, "benign.json": pluginManifest() });
+  await mkdir(path.join(pluginRoot, ".codex-plugin"));
+  await symlink("../benign.json", path.join(pluginRoot, ".codex-plugin", "plugin.json"));
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(errorCodes(result), new Set(["missing-plugin-manifest"]));
+});
+
+test("a symlinked .codex-plugin directory hides the Claude manifest below it", { skip: !symlinkSupported }, async (t) => {
+  const pluginRoot = await layoutPlugin(t, { ".claude-plugin/plugin.json": claudeManifest });
+  await writeJson(path.join(pluginRoot, "..", "elsewhere", "plugin.json"), pluginManifest());
+  await symlink(path.join(pluginRoot, "..", "elsewhere"), path.join(pluginRoot, ".codex-plugin"));
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(errorCodes(result), new Set(["missing-plugin-manifest"]));
+});
+
+test("an unparsable root plugin.json falls through to the legacy manifests", async (t) => {
+  const pluginRoot = await layoutPlugin(t, { ".codex-plugin/plugin.json": pluginManifest() });
+  await writeFile(path.join(pluginRoot, "plugin.json"), "{ not json\n");
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.manifests[0].format, "codex");
+});
+
+test("skips an overlay slot that is not a file", async (t) => {
+  const pluginRoot = await layoutPlugin(t, { "plugin.json": agentManifest() });
+  await mkdir(path.join(pluginRoot, ".codex-plugin", "plugin.json"), { recursive: true });
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.manifests[0].overlay, undefined);
+});
+
+test("accepts an inline mcpServers map and a skills list in a Claude manifest", async (t) => {
+  const pluginRoot = await layoutPlugin(t, {
+    ".claude-plugin/plugin.json": { ...claudeManifest, mcpServers: { docs: { command: "docs-mcp" } }, skills: ["./skills/"] },
+  });
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(result.errors, []);
+});
+
 // --- Catalog layouts --------------------------------------------------------
+
+test("prefers api_marketplace.json over a Claude catalog", async (t) => {
+  const root = await tempRoot(t);
+  await writeJson(path.join(root, ".agents", "plugins", "api_marketplace.json"), { name: "sample", plugins: [marketplaceEntry()] });
+  await writeJson(path.join(root, ".claude-plugin", "marketplace.json"), { name: "sample", plugins: [] });
+  await writeSkill(await writePlugin(root));
+  const result = await validateTarget(root);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.catalog, path.join(root, ".agents", "plugins", "api_marketplace.json"));
+  assert.deepEqual(warningCodes(result), new Set(["shadowed-marketplace-catalog"]));
+});
+
+test("warns that a Cursor catalog is shadowed by a Claude catalog", async (t) => {
+  const root = await tempRoot(t);
+  await writeJson(path.join(root, ".claude-plugin", "marketplace.json"), { name: "sample", plugins: [marketplaceEntry()] });
+  await writeJson(path.join(root, ".cursor-plugin", "marketplace.json"), { name: "sample", plugins: [] });
+  await writeSkill(await writePlugin(root));
+  const result = await validateTarget(root);
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(warningCodes(result), new Set(["legacy-host-catalog", "shadowed-marketplace-catalog"]));
+  assert.ok(result.warnings.some((warning) => warning.code === "shadowed-marketplace-catalog" && warning.file.includes(".cursor-plugin")));
+});
 
 test("accepts a Claude catalog as a fallback and reports its missing policy as warnings", async (t) => {
   const root = await tempRoot(t);
@@ -672,6 +746,32 @@ test("accepts a Cursor catalog source without the ./ prefix", async (t) => {
   const result = await validateTarget(root);
   assert.deepEqual(result.errors, []);
   assert.deepEqual(warningCodes(result), new Set(["legacy-host-catalog"]));
+});
+
+test("rejects an absolute source in a Cursor catalog instead of re-rooting it", async (t) => {
+  const root = await tempRoot(t);
+  await writeJson(path.join(root, ".cursor-plugin", "marketplace.json"), {
+    name: "sample",
+    plugins: [marketplaceEntry({ source: "/etc" })],
+  });
+  const result = await validateTarget(root);
+  assert.deepEqual(errorCodes(result), new Set(["invalid-marketplace-source"]));
+});
+
+test("rejects a manifest or catalog that is valid JSON but not an object", async (t) => {
+  const pluginRoot = await layoutPlugin(t, { ".codex-plugin/plugin.json": null });
+  assert.deepEqual(errorCodes(await validateTarget(pluginRoot)), new Set(["invalid-json"]));
+  const root = await tempRoot(t);
+  await writeJson(path.join(root, ".agents", "plugins", "marketplace.json"), null);
+  assert.deepEqual(errorCodes(await validateTarget(root)), new Set(["invalid-json"]));
+});
+
+test("reports non-string names without crashing", async (t) => {
+  const pluginRoot = await layoutPlugin(t, { ".codex-plugin/plugin.json": pluginManifest({ name: { toString: 1 }, version: 1 }) });
+  const result = await validateTarget(pluginRoot);
+  assert.deepEqual(errorCodes(result), new Set(["missing-plugin-name", "missing-plugin-version", "plugin-name-mismatch"]));
+  const marketplace = await completeMarketplace(t, { entry: { name: { toString: 1 } } });
+  assert.ok(errorCodes(await validateTarget(marketplace)).has("missing-marketplace-plugin-name"));
 });
 
 test("warns that a Claude catalog is shadowed by .agents/plugins/marketplace.json", async (t) => {
