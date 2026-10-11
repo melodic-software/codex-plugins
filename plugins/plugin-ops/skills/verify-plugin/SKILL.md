@@ -43,7 +43,8 @@ contract or repository-adaptation design is correct.
    node <skill-directory>/scripts/validate-marketplace.mjs <target-root>
    ```
 
-   Add `--json` when machine-readable output is useful.
+   Add `--json` when machine-readable output is useful; its shape is the
+   contract in [JSON output](#json-output).
 4. Fix structural errors before judgment-based review. Do not weaken the
    validator to accept a malformed package.
 5. Review the user-goal and architecture contract:
@@ -80,3 +81,19 @@ contract or repository-adaptation design is correct.
 Report errors first, then warnings and untested behavior. Include exact file
 paths, commands, live upstream URLs and date checked, context cases, adapter and
 fallback decisions, and behavioral evidence.
+
+## JSON output
+
+`--json` prints one object with these keys, in this order. Paths are absolute.
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `target` | string | Validated root. |
+| `kind` | `"marketplace"`, `"plugin"`, or `null` | What the target was; `null` when neither was found. |
+| `catalog` | string or `null` | Catalog Codex loads; `null` for a plugin target. |
+| `manifests` | array | One `{plugin, manifest, format}` per resolved plugin: its root, the manifest Codex loads, and `format` (`agent-plugin`, `codex`, `claude`, or `cursor`). An entry may add `overlay`, the `.codex-plugin` file read as the Codex overlay. |
+| `errors` | array | `{code, file, message}` entries that fail validation. |
+| `warnings` | array | `{code, file, message}` entries that do not. |
+
+Adding a key is compatible. Renaming or removing one, or changing its type, is
+breaking. The exit code is 0 only when `errors` is empty.
