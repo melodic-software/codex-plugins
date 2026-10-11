@@ -177,6 +177,8 @@ test("rejects an unparsable marketplace file", async (t) => {
 });
 
 test("skips a catalog slot that is not a file, as Codex does", async (t) => {
+  // Codex checks `is_file()` on each `MARKETPLACE_MANIFEST_RELATIVE_PATHS` entry in
+  // codex-rs/core-plugins/src/marketplace.rs (rust-v0.162.0).
   const root = await tempRoot(t);
   await mkdir(path.join(root, ".agents", "plugins", "marketplace.json"), { recursive: true });
   const result = await validateTarget(root);
@@ -834,6 +836,7 @@ test("command line emits the documented result shape with --json", async (t) => 
   const root = await completeMarketplace(t);
   const { stdout } = await run(process.execPath, [VALIDATOR, root, "--json"]);
   const parsed = JSON.parse(stdout);
+  // The key list is the contract in SKILL.md, section "JSON output".
   assert.deepEqual(Object.keys(parsed), ["target", "kind", "catalog", "manifests", "errors", "warnings"]);
   assert.equal(parsed.target, root);
   assert.equal(parsed.kind, "marketplace");
