@@ -7,6 +7,10 @@ import { pathToFileURL } from "node:url";
 
 const NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+// The semver.org reference pattern, which also rejects leading zeros, for root
+// Agent Plugins manifests. Codex itself only requires a non-empty version.
+const STRICT_SEMVER_PATTERN =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 const INSTALLATION_POLICIES = new Set(["NOT_AVAILABLE", "AVAILABLE", "INSTALLED_BY_DEFAULT"]);
 const AUTH_POLICIES = new Set(["ON_INSTALL", "ON_USE"]);
 // Agent Plugins names may also contain dots (`is_valid_agent_plugin_name` in
@@ -155,7 +159,9 @@ function resolveContained(root, relativePath, code, file, result, allowBare = fa
     return null;
   }
   // Codex rejects an absolute source in every catalog, so only a relative one gains the prefix.
-  if (allowBare && !relativePath.startsWith("./") && !path.isAbsolute(relativePath)) relativePath = `./${relativePath}`;
+  // Windows forms (`C:\`, `C:/`, `\\server`) count on every host, since Codex on Windows rejects them.
+  const absolute = path.posix.isAbsolute(relativePath) || path.win32.isAbsolute(relativePath) || /^[A-Za-z]:/.test(relativePath);
+  if (allowBare && !relativePath.startsWith("./") && !absolute) relativePath = `./${relativePath}`;
   if (!relativePath.startsWith("./")) {
     result.errors.push({ code, file, message: "Path must be relative to the package root and start with './'." });
     return null;
@@ -284,7 +290,7 @@ async function resolveManifest(pluginRoot, result) {
   return {};
 }
 
-function validateIdentity(manifest, manifestFile, expectedName, namePattern, report, result) {
+function validateIdentity(manifest, manifestFile, expectedName, namePattern, versionPattern, report, result) {
   requireString(manifest.name, "missing-plugin-name", manifestFile, result);
   for (const [value, code] of [
     [manifest.version, "missing-plugin-version"],
@@ -298,7 +304,7 @@ function validateIdentity(manifest, manifestFile, expectedName, namePattern, rep
   if (name && !namePattern.test(name)) {
     result.errors.push({ code: "invalid-plugin-name", file: manifestFile, message: "Plugin name must be kebab-case (an Agent Plugins name may also contain dots)." });
   }
-  if (typeof manifest.version === "string" && manifest.version && !SEMVER_PATTERN.test(manifest.version)) {
+  if (typeof manifest.version === "string" && manifest.version && !versionPattern.test(manifest.version)) {
     report.push({ code: "invalid-plugin-version", file: manifestFile, message: "Plugin version must use strict semantic versioning." });
   }
   if (expectedName && name !== expectedName) {
@@ -333,7 +339,7 @@ async function validateLegacyManifest(pluginRoot, manifest, manifestFile, format
   if (format !== "codex") {
     result.warnings.push({ code: "legacy-host-manifest", file: manifestFile, message: `Codex loads this ${HOST_NAMES[format]} manifest as a fallback; publish a root plugin.json or .codex-plugin/plugin.json for Codex.` });
   }
-  validateIdentity(manifest, manifestFile, expectedName, NAME_PATTERN, report, result);
+  validateIdentity(manifest, manifestFile, expectedName, NAME_PATTERN, SEMVER_PATTERN, report, result);
   await validateCodexFields(pluginRoot, manifest, manifestFile, true, report, result);
   // The published manifest contract declares `mcpServers` as a './'-relative
   // path to an .mcp.json file; the server map itself lives inside that file.
@@ -356,7 +362,7 @@ async function validateAgentManifest(pluginRoot, manifest, manifestFile, overlay
   for (const field of Object.keys(manifest).filter((key) => !AGENT_PLUGIN_FIELDS.has(key))) {
     result.warnings.push({ code: "ignored-agent-plugin-field", file: manifestFile, message: `Codex ignores '${field}' in a root plugin.json; put Codex fields under extensions.${CODEX_EXTENSION}.` });
   }
-  validateIdentity(manifest, manifestFile, expectedName, AGENT_NAME_PATTERN, result.errors, result);
+  validateIdentity(manifest, manifestFile, expectedName, AGENT_NAME_PATTERN, STRICT_SEMVER_PATTERN, result.errors, result);
   // An inline extension replaces the .codex-plugin overlay; without one, the
   // overlay supplies the Codex fields. With neither, Codex derives the
   // interface from name, description, and author.

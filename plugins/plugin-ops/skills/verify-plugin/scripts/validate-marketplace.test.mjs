@@ -543,6 +543,18 @@ test("rejects an unsupported Agent Plugins schema version", async (t) => {
   assert.deepEqual(errorCodes(result), new Set(["unsupported-agent-plugin-schema"]));
 });
 
+for (const version of ["01.2.3", "1.02.3", "1.0.0-01", "1.0"]) {
+  test(`rejects the non-SemVer root manifest version ${version}`, async (t) => {
+    const pluginRoot = await layoutPlugin(t, { "plugin.json": agentManifest({ version }) });
+    assert.deepEqual(errorCodes(await validateTarget(pluginRoot)), new Set(["invalid-plugin-version"]));
+  });
+}
+
+test("accepts a SemVer root manifest version with prerelease and build parts", async (t) => {
+  const pluginRoot = await layoutPlugin(t, { "plugin.json": agentManifest({ version: "1.0.0-0.alpha.10+build.007" }) });
+  assert.deepEqual((await validateTarget(pluginRoot)).errors, []);
+});
+
 test("warns about root manifest fields Codex ignores", async (t) => {
   const pluginRoot = await layoutPlugin(t, { "plugin.json": agentManifest({ interface: { displayName: "Sample" } }) });
   const result = await validateTarget(pluginRoot);
@@ -757,6 +769,18 @@ test("rejects an absolute source in a Cursor catalog instead of re-rooting it", 
   const result = await validateTarget(root);
   assert.deepEqual(errorCodes(result), new Set(["invalid-marketplace-source"]));
 });
+
+for (const source of ["C:\\Users\\alice\\plugin", "C:/Users/alice/plugin", "C:plugin", "\\\\server\\share\\plugin", "\\plugin"]) {
+  test(`rejects the Windows absolute Cursor source ${JSON.stringify(source)} on every host`, async (t) => {
+    const root = await tempRoot(t);
+    await writeJson(path.join(root, ".cursor-plugin", "marketplace.json"), {
+      name: "sample",
+      plugins: [marketplaceEntry({ source })],
+    });
+    const result = await validateTarget(root);
+    assert.deepEqual(errorCodes(result), new Set(["invalid-marketplace-source"]));
+  });
+}
 
 test("rejects a manifest or catalog that is valid JSON but not an object", async (t) => {
   const pluginRoot = await layoutPlugin(t, { ".codex-plugin/plugin.json": null });
