@@ -310,6 +310,8 @@ test("discover_surfaces reads a Codex marketplace and skips node_modules", { ski
     "plugins/one/skills/a/references/more.md",
     "plugins/one/skills/a/scripts/run.py",
     "plugins/two/skills/group/b/SKILL.md",
+    "plugins/two/skills/group/b/agents/openai.yaml",
+    "plugins/two/skills/group/b/scripts/run.sh",
     "plugins/two/hooks/hooks.json",
     "plugins/two/.mcp.json",
     "plugins/two/node_modules/dep/SKILL.md",
@@ -324,9 +326,10 @@ test("discover_surfaces reads a Codex marketplace and skips node_modules", { ski
   assert.equal(counts["plugin manifests"], 2);
   assert.equal(counts["plugin skills"], 3, "nested skills count, a skill dir named vendor included; node_modules does not");
   assert.match(result.stdout, /plugins\/\*\/skills\/\*\*\/SKILL\.md/u, "marketplace globs are root-relative");
-  assert.equal(counts["skill sidecars"], 1);
+  assert.equal(counts["skill sidecars"], 2, "a nested skill sidecar counts");
   assert.equal(counts["skill references (excl. SKILL.md)"], 1);
-  assert.equal(counts["skill scripts"], 1);
+  assert.equal(counts["skill scripts"], 2);
+  assert.match(result.stdout, /plugins\/\*\/skills\/\*\*\/agents\/openai\.yaml/u, "sidecar glob reaches nested skills");
   assert.equal(counts["plugin hooks"], 1);
   assert.equal(counts["plugin mcp config"], 1);
   assert.equal(counts.tests, 1);
@@ -349,6 +352,8 @@ test("discover_surfaces reads a root plugin.json plugin and a consumer repositor
     ".agents/skills/local/SKILL.md",
     "services/api/.agents/skills/svc/SKILL.md",
     ".github/workflows/ci.yml",
+    "scripts/release-check.sh",
+    "package.json",
   ]);
   const consumerRun = run(surfacesScript, [consumer]);
   assert.equal(consumerRun.stdout.split("\n")[0], "repo-shape: consumer");
@@ -358,6 +363,8 @@ test("discover_surfaces reads a root plugin.json plugin and a consumer repositor
   assert.equal(counts["project hooks"], 1);
   assert.equal(counts["repository skills"], 2);
   assert.equal(counts["ci workflows"], 1);
+  assert.equal(counts["repository scripts"], 1, "a consumer script that calls codex is searchable");
+  assert.equal(counts["build and task files"], 1);
   assert.equal(counts["plugin skills"], undefined);
 });
 

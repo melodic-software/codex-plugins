@@ -30,6 +30,7 @@ MARKETPLACES = (
     ".claude-plugin/marketplace.json",
     ".cursor-plugin/marketplace.json",
 )
+BUILD_FILES = ("package.json", "Makefile", "justfile", "Taskfile.yml")
 PLUGIN_MANIFESTS = (
     "plugin.json",
     ".codex-plugin/plugin.json",
@@ -95,6 +96,9 @@ def classes(shape: str) -> list[tuple]:
         ("repository skills", "**/.agents/skills/*/SKILL.md",
          lambda p: p.name == "SKILL.md" and len(p.parts) >= 4 and p.parts[-4:-2] == (".agents", "skills")),
         ("ci workflows", ".github/workflows/*", under(".github/workflows/")),
+        ("repository scripts", "scripts/**, bin/**", lambda p: len(p.parts) > 1 and p.parts[0] in ("scripts", "bin")),
+        ("tests", "tests/**, test/**", lambda p: len(p.parts) > 1 and p.parts[0] in ("tests", "test")),
+        ("build and task files", ", ".join(BUILD_FILES), lambda p: p.as_posix() in BUILD_FILES),
     ]
     if shape == "consumer":
         return consumer
@@ -104,9 +108,9 @@ def classes(shape: str) -> list[tuple]:
         ("plugin skills", "skills/**/SKILL.md", plugin_scoped(lambda r: in_skills(r) and r[-1] == "SKILL.md")),
         ("skill references (excl. SKILL.md)", "skills/**/*.md",
          plugin_scoped(lambda r: in_skills(r) and r[-1].endswith(".md") and r[-1] != "SKILL.md")),
-        ("skill sidecars", "skills/*/agents/openai.yaml",
+        ("skill sidecars", "skills/**/agents/openai.yaml",
          plugin_scoped(lambda r: in_skills(r) and r[-2:] == ("agents", "openai.yaml"))),
-        ("skill scripts", "skills/*/scripts/**", plugin_scoped(lambda r: in_skills(r) and "scripts" in r[2:-1])),
+        ("skill scripts", "skills/**/scripts/**", plugin_scoped(lambda r: in_skills(r) and "scripts" in r[2:-1])),
         ("plugin hooks", "hooks/**", plugin_scoped(lambda r: len(r) > 1 and r[0] == "hooks")),
         ("plugin mcp config", ".mcp.json, mcp.json", plugin_scoped(lambda r: r in ((".mcp.json",), ("mcp.json",)))),
         ("plugin app mapping", ".app.json", plugin_scoped(lambda r: r == (".app.json",))),
@@ -114,10 +118,10 @@ def classes(shape: str) -> list[tuple]:
     ]
     if shape == "marketplace":
         # Printed globs are root-relative, so each can be passed to `rg -g`.
+        plugin.append(("plugin tests", "tests/**", plugin_scoped(lambda r: len(r) > 1 and r[0] == "tests")))
         plugin = [(label, ", ".join(f"plugins/*/{g}" for g in glob.split(", ")), rule)
                   for label, glob, rule in plugin]
         plugin.insert(0, ("marketplace catalog", ", ".join(MARKETPLACES), lambda p: p.as_posix() in MARKETPLACES))
-        plugin.append(("tests", "tests/**", under("tests/")))
     return consumer + plugin
 
 

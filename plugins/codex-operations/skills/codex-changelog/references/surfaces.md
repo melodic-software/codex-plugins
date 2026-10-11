@@ -22,6 +22,8 @@ Recheck the script's globs when one of those pages moves a location.
 | `.codex/hooks*` | Event names, configuration keys, payload shape, trust |
 | `.agents/skills/*/SKILL.md` | Frontmatter, discovery, or invocation behavior |
 | `.github/workflows/*` | A `codex` command or flag that CI runs |
+| `scripts/**`, `bin/**`, build and task files | A `codex` command, flag, or output a script depends on |
+| `tests/**`, `test/**` | Assertions that pin a behavior the release changed |
 
 ## Plugins and marketplaces
 
@@ -36,7 +38,7 @@ Printed when `repo-shape` is `plugin` or `marketplace`.
 | skill scripts | A CLI flag or output a script parses |
 | plugin hooks, mcp config, app mapping | Event, transport, auth, or substitution behavior |
 | plugin agent dirs | Whether Codex loads a plugin's `agents/` at all |
-| tests | Assertions that pin a behavior the release changed |
+| plugin tests | Assertions that pin a behavior the release changed |
 
 ## Search patterns
 
