@@ -154,7 +154,7 @@ not OpenAI built-ins.
 | Plugin | Explicit examples |
 | --- | --- |
 | `plugin-ops` | `$plugin-ops:install-marketplace`, `$plugin-ops:update-plugins`, `$plugin-ops:verify-plugin`, `$plugin-ops:migrate-plugin` |
-| `codex-operations` | `$codex-operations:coordinate-codex-work`, `$codex-operations:find-skill-candidates` |
+| `codex-operations` | `$codex-operations:coordinate-codex-work`, `$codex-operations:find-skill-candidates`, `$codex-operations:codex-changelog` |
 | `scheduled-tasks` | `$scheduled-tasks:manage-scheduled-tasks` |
 | `humanize` | `$humanize:humanize` |
 

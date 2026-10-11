@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { findPython } from "./helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const collector = path.join(
@@ -16,23 +17,6 @@ const collector = path.join(
   "scripts",
   "collect_recent_sessions.py",
 );
-
-function findPython() {
-  const candidates = [
-    { command: "python", prefix: [] },
-    { command: "python3", prefix: [] },
-    { command: "py", prefix: ["-3"] },
-  ];
-  for (const candidate of candidates) {
-    const result = spawnSync(candidate.command, [...candidate.prefix, "--version"], {
-      encoding: "utf8",
-    });
-    if (result.status === 0) {
-      return candidate;
-    }
-  }
-  return null;
-}
 
 const python = findPython();
 const skip = python ? false : "Python 3 is not available";
