@@ -90,8 +90,23 @@ jobs:
       - name: Validate the marketplace
         run: npm run validate
 
+  lychee:
+    name: Offline links
+    if: ${{ !(github.event.pull_request.head.repo.full_name == github.repository && (contains(fromJSON('["labeled","unlabeled"]'), github.event.action) || (github.event.action == 'edited' && !github.event.changes.base))) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check local links and anchors
+        uses: melodic-software/ci-workflows/.github/actions/lychee-offline@594987abe8657a40bccc13d301f1f0d5cccb5348 # v0.39.8
+        with:
+          config: lychee.toml
+
   ci-status:
-    needs: [validate-marketplace]
+    needs: [validate-marketplace, lychee]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     # No run waits for another: with `yield-to-full-run` a contract-only run
