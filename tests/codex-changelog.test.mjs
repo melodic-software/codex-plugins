@@ -173,6 +173,83 @@ test("fetch prints stable item ids and round-trips through --out and --from", { 
   assert.equal(statusLines(replay.stdout).range, "0.2.0..0.3.0 (3 releases, 6 items)");
 });
 
+test("fetch prints no items once the item cap is exceeded", { skip }, async (t) => {
+  const source = await writeSource(t);
+  const result = run(releasesScript, ["fetch", "--from", source, "--range", "0.2.0..0.3.0", "--cap-items", "2"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(statusLines(result.stdout).cap, /^exceeded/u);
+  assert.doesNotMatch(result.stdout, /^0\.\d\.\d-\d{3} /mu);
+});
+
+test("fetch refuses an --out directory that already holds files", { skip }, async (t) => {
+  const source = await writeSource(t);
+  const out = await tempDir(t, "codex-changelog-used-");
+  await writeFile(path.join(out, "planted.md"), "x\n", "utf8");
+  const result = run(releasesScript, ["fetch", "--from", source, "--range", "0.2.0", "--out", out]);
+  assert.equal(result.status, 3, result.stdout);
+  assert.match(result.stderr, /new or empty directory/u);
+});
+
+test("pre-0.77 release layouts stop at the merged-PR list and keep breaking-change headings", { skip }, async (t) => {
+  // Shape of the openai/codex 0.24.0 and 0.36.0 bodies: no `## Changelog`
+  // marker, a breaking change stated as a heading, and the PR list under a
+  // "merged PRs" heading.
+  const source = await tempDir(t, "codex-changelog-old-");
+  await mkdir(path.join(source, "notes"));
+  await writeFile(
+    path.join(source, "releases.json"),
+    JSON.stringify([{ tagName: "rust-v0.36.0", publishedAt: "2025-09-15T00:00:00Z" }]),
+    "utf8",
+  );
+  await writeFile(
+    path.join(source, "notes", "0.36.0.md"),
+    "### **Breaking change:** `OPENAI_API_KEY` is no longer read from the environment\n\nProse.\n\n" +
+      "### Highlights\n\n- Resume old sessions.\n\n### Full list of merged PRs:\n\n- #3537 resume @someone\n- #3625 more @someone\n",
+    "utf8",
+  );
+  const result = run(releasesScript, ["fetch", "--from", source, "--range", "0.36.0"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(statusLines(result.stdout).range, "0.36.0..0.36.0 (1 releases, 2 items)");
+  assert.match(result.stdout, /^0\.36\.0-001 \[Breaking\] Breaking change: `OPENAI_API_KEY` is no longer read/mu);
+  assert.match(result.stdout, /^0\.36\.0-002 \[Highlights\] Resume old sessions\.$/mu);
+});
+
+test("a range older than a full release list is not computed", { skip }, async (t) => {
+  const source = await tempDir(t, "codex-changelog-full-");
+  const rows = Array.from({ length: 200 }, (_, index) => ({
+    tagName: `rust-v1.${index}.0`,
+    publishedAt: "2026-10-01T00:00:00Z",
+  }));
+  await writeFile(path.join(source, "releases.json"), JSON.stringify(rows), "utf8");
+  const ledger = await writeLedger(t, "0.9.0");
+  const result = run(releasesScript, ["status", "--from", source, "--ledger", ledger]);
+  assert.match(statusLines(result.stdout).range, /^not computed \(the range starts before 1\.0\.0/u);
+});
+
+const posixOnly = skip || (process.platform === "win32" && "POSIX shim only");
+
+test("the gh adapter lists stable releases and reads bodies", { skip: posixOnly }, async (t) => {
+  const bin = await tempDir(t, "codex-changelog-gh-");
+  const shim = path.join(bin, "gh");
+  const list = JSON.stringify([{ tagName: "rust-v0.5.0", publishedAt: "2026-10-01T00:00:00Z" }]);
+  const body = JSON.stringify({ body: "## Bug Fixes\n\n- Fixed it.\n\n## Changelog\n\n- #9 raw @x\n" });
+  await writeFile(
+    shim,
+    `#!/bin/sh\ncase "$2" in\n  list) printf '%s\\n' '${list}' ;;\n  view) [ "$3" = rust-v0.5.0 ] && printf '%s\\n' '${body}' || exit 1 ;;\nesac\n`,
+    "utf8",
+  );
+  await chmod(shim, 0o755);
+  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}` };
+  const ok = run(releasesScript, ["fetch", "--range", "0.5.0"], { env });
+  assert.equal(statusLines(ok.stdout).range, "0.5.0..0.5.0 (1 releases, 1 items)");
+  assert.match(ok.stdout, /^0\.5\.0-001 \[Bug Fixes\] Fixed it\.$/mu);
+
+  await writeFile(shim, "#!/bin/sh\nexit 1\n", "utf8");
+  const failed = run(releasesScript, ["status", "--range", "0.5.0"], { env });
+  assert.equal(failed.status, 0);
+  assert.match(statusLines(failed.stdout).range, /^not computed \(`gh release list -R openai\/codex` failed/u);
+});
+
 test("an installed Codex older than the range warns", { skip: skip || (process.platform === "win32" && "POSIX shim only") }, async (t) => {
   const source = await writeSource(t);
   const bin = await tempDir(t, "codex-changelog-bin-");
@@ -220,7 +297,7 @@ function surfaceCounts(stdout) {
   return counts;
 }
 
-test("discover_surfaces reads a Codex marketplace and skips vendored trees", { skip }, async (t) => {
+test("discover_surfaces reads a Codex marketplace and skips node_modules", { skip }, async (t) => {
   const root = await tempDir(t, "codex-surfaces-market-");
   await writeTree(root, [
     ".agents/plugins/marketplace.json",
@@ -245,9 +322,10 @@ test("discover_surfaces reads a Codex marketplace and skips vendored trees", { s
   const counts = surfaceCounts(result.stdout);
   assert.equal(counts.plugins, 2);
   assert.equal(counts["plugin manifests"], 2);
-  assert.equal(counts["plugin skills"], 2, "nested skills count; node_modules and vendor do not");
+  assert.equal(counts["plugin skills"], 3, "nested skills count, a skill dir named vendor included; node_modules does not");
+  assert.match(result.stdout, /plugins\/\*\/skills\/\*\*\/SKILL\.md/u, "marketplace globs are root-relative");
   assert.equal(counts["skill sidecars"], 1);
-  assert.equal(counts["skill references"], 1);
+  assert.equal(counts["skill references (excl. SKILL.md)"], 1);
   assert.equal(counts["skill scripts"], 1);
   assert.equal(counts["plugin hooks"], 1);
   assert.equal(counts["plugin mcp config"], 1);

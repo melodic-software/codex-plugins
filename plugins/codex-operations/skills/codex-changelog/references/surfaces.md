@@ -40,12 +40,13 @@ Printed when `repo-shape` is `plugin` or `marketplace`.
 
 ## Search patterns
 
-Search only the globs the script printed, never the whole tree unbounded:
+Search only the globs the script printed, never the whole tree unbounded. The
+globs are relative to the repository root; pass each with `-g` so `rg` expands
+it, not the shell:
 
 ```text
-rg -n "<command or flag>" <printed globs>
-rg -n "<skill or plugin name>" <printed globs>
-rg -n "<config key or hook event>" <printed globs>
+rg -n "<command or flag>" -g '<printed glob>' -g '<printed glob>'
+rg -n "<skill, plugin, config key, or hook event>" -g '<printed glob>'
 ```
 
 A hit makes the surface a candidate. The lens still comes from what the item

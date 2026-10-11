@@ -38,7 +38,12 @@ VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 MARKER_RE = re.compile(r"Last read Codex release:\*\*\s*`(\d+\.\d+\.\d+)`")
 BULLET_RE = re.compile(r"^\s*[-*]\s+(.*\S)")
 SECTION_RE = re.compile(r"^#{1,6}\s+(.*\S)")
-END_RE = re.compile(r"^(#{1,6}\s+changelog\b|full changelog:)", re.IGNORECASE)
+# The raw pull-request list starts at `## Changelog` / `Full Changelog:` from
+# 0.77.0 on, and under a "merged PRs" heading in older releases.
+END_RE = re.compile(
+    r"^(#{1,6}\s+(changelog\b|full list of merged prs|(all\s+)?merged prs|prs merged)|full changelog:)",
+    re.IGNORECASE,
+)
 DEFAULT_LEDGER = Path("docs") / "upstream" / "codex-cli.md"
 DEFAULT_CAP_RELEASES = 50
 DEFAULT_CAP_ITEMS = 400
@@ -81,6 +86,9 @@ def parse_items(body: str) -> list[tuple[str, str]]:
         heading = SECTION_RE.match(line)
         if heading:
             section = heading.group(1)
+            if "breaking" in section.lower():
+                # Older releases state a breaking change as a heading, not a bullet.
+                items.append(("Breaking", section.replace("*", "").strip()))
             continue
         bullet = BULLET_RE.match(line)
         if bullet:
@@ -178,6 +186,10 @@ def main(argv: list[str]) -> int:
             raise UsageError("caps must be zero or greater")
         if args.out and args.command != "fetch":
             raise UsageError("--out applies to fetch only")
+        # A fresh directory only: an existing one may hold planted symlinks or
+        # edited item files that the agent would then read.
+        if args.out and args.out.exists() and (not args.out.is_dir() or any(args.out.iterdir())):
+            raise UsageError(f"--out must be a new or empty directory: {args.out}")
         bounds = parse_range(args.range_text) if args.range_text else None
         if args.source_dir and not (args.source_dir / "releases.json").is_file():
             raise UsageError(f"no releases.json under --from {args.source_dir}")
@@ -201,7 +213,8 @@ def report(args: argparse.Namespace, bounds: tuple[Version, Version] | None,
 
     source = DirectorySource(args.source_dir) if args.source_dir else GitHubSource()
     try:
-        published = stable_releases(source.releases())
+        rows = source.releases()
+        published = stable_releases(rows)
     except (RuntimeError, OSError, ValueError) as error:
         emit("latest", "unknown")
         emit("range", f"not computed ({error})")
@@ -212,6 +225,13 @@ def report(args: argparse.Namespace, bounds: tuple[Version, Version] | None,
         return 0
     latest = max(published)
     emit("latest", f"{show(latest)} (published {published[latest]})")
+
+    # A full list page may stop short of the releases the range needs.
+    start = bounds[0] if bounds else marker
+    if len(rows) >= LIST_LIMIT and start is not None and start < min(published):
+        emit("range", f"not computed (the range starts before {show(min(published))}, the oldest of the "
+             f"newest {LIST_LIMIT} releases listed)")
+        return 0
 
     if bounds:
         in_range = sorted(v for v in published if bounds[0] <= v <= bounds[1])
@@ -229,11 +249,8 @@ def report(args: argparse.Namespace, bounds: tuple[Version, Version] | None,
         return 0
 
     first, last = in_range[0], in_range[-1]
-    oldest_listed = min(published)
-    truncated = len(published) >= LIST_LIMIT and first == oldest_listed
-    if len(in_range) > args.cap_releases or truncated:
-        count = f"{len(in_range)}{'+' if truncated else ''}"
-        emit("range", f"{show(first)}..{show(last)} ({count} releases, items not counted)")
+    if len(in_range) > args.cap_releases:
+        emit("range", f"{show(first)}..{show(last)} ({len(in_range)} releases, items not counted)")
         exceeded(emit, args, ledger, last)
         return 0
 
@@ -249,8 +266,8 @@ def report(args: argparse.Namespace, bounds: tuple[Version, Version] | None,
     emit("releases", " ".join(show(v) for v in in_range))
     if total > args.cap_items:
         exceeded(emit, args, ledger, last)
-    else:
-        emit("cap", f"within budget ({args.cap_releases} releases / {args.cap_items} items)")
+        return 0
+    emit("cap", f"within budget ({args.cap_releases} releases / {args.cap_items} items)")
     if installed and installed < last:
         emit("warn", f"installed {show(installed)} is older than {show(last)}, the newest release in the range; "
              "update Codex before acting on items that need it")

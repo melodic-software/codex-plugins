@@ -11,8 +11,8 @@ Shape: a marketplace has a Codex or legacy-compatible marketplace catalog
 (.agents/plugins/marketplace.json, .claude-plugin/marketplace.json or
 .cursor-plugin/marketplace.json); a plugin has a manifest at its root
 (plugin.json, .codex-plugin/plugin.json, or a Claude or Cursor manifest that
-Codex reads as a fallback); anything else is a consumer. Directories named
-.git, node_modules, vendor, or starting with .work are not walked.
+Codex reads as a fallback); anything else is a consumer. The walk skips
+.git and node_modules directories. Printed globs are relative to ROOT.
 
 Exit 0 when ROOT exists; 2 for a missing ROOT or an unknown argument.
 Python 3.9 or newer; standard library only.
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 from typing import Callable
 
-SKIP_DIRS = {".git", "node_modules", "vendor"}
+SKIP_DIRS = {".git", "node_modules"}
 MARKETPLACES = (
     ".agents/plugins/marketplace.json",
     ".claude-plugin/marketplace.json",
@@ -39,7 +39,7 @@ PLUGIN_MANIFESTS = (
 
 
 def walk(root: Path) -> list[Path]:
-    """Every file under root, relative, skipping vendored and scratch trees."""
+    """Every file under root, relative, skipping VCS metadata and dependencies."""
     found: list[Path] = []
     stack = [root]
     while stack:
@@ -50,7 +50,7 @@ def walk(root: Path) -> list[Path]:
             continue
         for entry in entries:
             if entry.is_dir() and not entry.is_symlink():
-                if entry.name not in SKIP_DIRS and not entry.name.startswith(".work"):
+                if entry.name not in SKIP_DIRS:
                     stack.append(entry)
             elif entry.is_file():
                 found.append(entry.relative_to(root))
@@ -99,10 +99,10 @@ def classes(shape: str) -> list[tuple]:
     if shape == "consumer":
         return consumer
     plugin = [
-        ("plugin manifests", "plugin.json, .codex-plugin/plugin.json (and Claude/Cursor fallbacks)",
+        ("plugin manifests", ", ".join(PLUGIN_MANIFESTS),
          plugin_scoped(lambda r: "/".join(r) in PLUGIN_MANIFESTS)),
         ("plugin skills", "skills/**/SKILL.md", plugin_scoped(lambda r: in_skills(r) and r[-1] == "SKILL.md")),
-        ("skill references", "skills/**/*.md (not SKILL.md)",
+        ("skill references (excl. SKILL.md)", "skills/**/*.md",
          plugin_scoped(lambda r: in_skills(r) and r[-1].endswith(".md") and r[-1] != "SKILL.md")),
         ("skill sidecars", "skills/*/agents/openai.yaml",
          plugin_scoped(lambda r: in_skills(r) and r[-2:] == ("agents", "openai.yaml"))),
@@ -113,6 +113,9 @@ def classes(shape: str) -> list[tuple]:
         ("plugin agent dirs (ignored by Codex)", "agents/*", plugin_scoped(lambda r: len(r) == 2 and r[0] == "agents")),
     ]
     if shape == "marketplace":
+        # Printed globs are root-relative, so each can be passed to `rg -g`.
+        plugin = [(label, ", ".join(f"plugins/*/{g}" for g in glob.split(", ")), rule)
+                  for label, glob, rule in plugin]
         plugin.insert(0, ("marketplace catalog", ", ".join(MARKETPLACES), lambda p: p.as_posix() in MARKETPLACES))
         plugin.append(("tests", "tests/**", under("tests/")))
     return consumer + plugin
