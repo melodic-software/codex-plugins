@@ -89,7 +89,7 @@ fallback decisions, and behavioral evidence.
 | Key | Type | Meaning |
 | --- | --- | --- |
 | `target` | string | Validated root. |
-| `kind` | `"marketplace"`, `"plugin"`, or `null` | What the target was; `null` when neither was found. |
+| `kind` | `"marketplace"`, `"plugin"`, or `null` | What the target was; `null` when the target is neither or could not be inspected. |
 | `catalog` | string or `null` | Catalog Codex loads; `null` for a plugin target. |
 | `manifests` | array | One `{plugin, manifest, format}` per resolved plugin: its root, the manifest Codex loads, and `format` (`agent-plugin`, `codex`, `claude`, or `cursor`). An entry may add `overlay`, the `.codex-plugin` file read as the Codex overlay. |
 | `errors` | array | `{code, file, message}` entries that fail validation. |
