@@ -12,7 +12,7 @@ const paths = skillPaths("plugin-ops");
 test("the marketplace exposes the Plugin Ops plugin", async () => {
   await assertMarketplacePlugin({
     name: "plugin-ops",
-    version: "0.2.2",
+    version: "0.2.3",
     category: "Developer Tools",
   });
 });

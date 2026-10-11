@@ -1,6 +1,6 @@
 ---
 name: verify-plugin
-description: Validate a Codex plugin package or repo marketplace for manifest, catalog, skill, context-discovery, architecture, path, and portability defects. Use when reviewing, testing, publishing, migrating, or troubleshooting `.codex-plugin/plugin.json` or `.agents/plugins/marketplace.json` content.
+description: Validate a Codex plugin package or repo marketplace for manifest, catalog, skill, context-discovery, architecture, path, and portability defects. Use when reviewing, testing, publishing, migrating, or troubleshooting a plugin manifest (root `plugin.json`, `.codex-plugin/plugin.json`, or a Claude or Cursor fallback) or a marketplace catalog.
 ---
 
 # Verify Plugin
@@ -11,9 +11,28 @@ contract or repository-adaptation design is correct.
 
 ## Workflow
 
-1. Locate either a marketplace root containing
-   `.agents/plugins/marketplace.json` or a plugin root containing
-   `.codex-plugin/plugin.json`.
+1. Locate either a marketplace root or a plugin root. The validator finds the
+   catalog and each manifest in Codex's own lookup order, validates the one
+   Codex loads, prints it as `CATALOG` and `MANIFEST` lines (`catalog` and
+   `manifests` with `--json`), and warns about any it would ignore:
+   - manifests: root `plugin.json` when its `$schema` is an Agent Plugins URI,
+     then `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, and
+     `.cursor-plugin/plugin.json`. A root manifest without an
+     `extensions.com.openai` object reads `.codex-plugin/plugin.json` as its
+     overlay rather than ignoring it;
+   - catalogs: `.agents/plugins/marketplace.json`,
+     `.agents/plugins/api_marketplace.json`, `.claude-plugin/marketplace.json`,
+     and `.cursor-plugin/marketplace.json`; and
+   - a Claude or Cursor manifest or catalog passes with warnings, because Codex
+     loads it only as a fallback.
+
+   Order as of Codex `rust-v0.162.0` (checked 2026-10-10):
+   `find_plugin_manifest_path` in `codex-rs/utils/plugins/src/plugin_namespace.rs`,
+   the overlay in `codex-rs/core-plugins/src/manifest/manifest_cache.rs`, and
+   `MARKETPLACE_MANIFEST_RELATIVE_PATHS` in
+   `codex-rs/core-plugins/src/marketplace.rs`. Recheck them, and the
+   [packaging guide](https://developers.openai.com/plugins/build/plugins), on
+   each Codex minor release.
 2. Complete the repository's official-documentation preflight. Fetch current
    official architecture, packaging, skills, hooks, MCP/app, `AGENTS.md`, and
    security documentation relevant to the package. Record URLs and date; copy
