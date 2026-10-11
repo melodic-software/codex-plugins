@@ -15,8 +15,10 @@ Codex loads a Claude or Cursor plugin without changes when the plugin is a
 skill-only plugin, uses no host variables (`CLAUDE_PLUGIN_ROOT`,
 `CLAUDE_SKILL_DIR`, `${user_config.*}`) and no `!` dynamic context injection,
 and keeps no eval-fixture `SKILL.md` under `skills/`.
-Codex reads a `.claude-plugin` or `.cursor-plugin` manifest when no
-`.codex-plugin` manifest is present. It also accepts
+Codex reads a `.claude-plugin` or `.cursor-plugin` manifest when neither a
+root `plugin.json` that declares an Agent Plugins `$schema` nor a
+`.codex-plugin` manifest is present (`find_plugin_manifest_path`, same file
+as the test cited below). It also accepts
 `$REPO_ROOT/.claude-plugin/marketplace.json` or
 `$REPO_ROOT/.cursor-plugin/marketplace.json` as a legacy-compatible marketplace,
 which you add with `codex plugin marketplace add`
@@ -34,8 +36,8 @@ first.
 
 | Source component | Codex disposition |
 | --- | --- |
-| Claude `.claude-plugin/plugin.json` | Reshape as `.codex-plugin/plugin.json`; do not dual-load. Optional on the fast path. |
-| Cursor `.cursor-plugin/plugin.json` | Reshape as `.codex-plugin/plugin.json`; do not dual-load. Optional on the fast path. |
+| Claude `.claude-plugin/plugin.json` | Reshape as a root `plugin.json` (the portable manifest: Agent Plugins `$schema`, Codex fields under `extensions.com.openai`) or as `.codex-plugin/plugin.json`; do not dual-load. Codex loads the root manifest first and ignores the source manifest once either exists; without that extension it reads `.codex-plugin/plugin.json` only as an overlay for apps, hooks, and interface (`find_plugin_manifest_path` in `codex-rs/utils/plugins/src/plugin_namespace.rs`, `codex-rs/core-plugins/src/manifest/manifest_cache.rs`, both at `rust-v0.162.0`). Optional on the fast path. |
+| Cursor `.cursor-plugin/plugin.json` | Same as the Claude manifest row. Optional on the fast path. |
 | Skill folder with `SKILL.md` | Review and usually reshape; preserve domain logic, update triggers, tools, paths, and UI metadata. A skill that uses `CLAUDE_PLUGIN_ROOT`, `CLAUDE_SKILL_DIR`, or `!` dynamic context injection loses that behavior in Codex. |
 | Claude/Cursor marketplace catalog | Rebuild as `.agents/plugins/marketplace.json` with Codex policy fields and plugin-relative sources. Optional on the fast path. In 0.162.0, `defaultEnabled: false` was ignored on install: a marketplace entry's policy reads only `installation`, `authentication`, and `products` (`RawMarketplaceManifestPluginPolicy` in `codex-rs/core-plugins/src/marketplace.rs`). |
 | Hook configuration | Rewrite from current Codex hook events, trust, inputs, and outputs. Never assume another host's hook runs unchanged. In 0.162.0, Codex silently drops command-hook keys missing from `codex-rs/config/src/hook_config.rs`, including `args`, which leaves a bare interpreter command. It also drops events Codex lacks, such as `PostToolUseFailure`. Plugin hooks do not run until the user trusts them. Edit and Write map to `apply_patch`, whose payload has a different shape (inferred, not tested). |
