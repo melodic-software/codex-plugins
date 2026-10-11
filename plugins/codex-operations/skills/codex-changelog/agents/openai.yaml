@@ -1,6 +1,6 @@
 interface:
   display_name: "Codex Changelog"
-  short_description: "Report what new Codex releases change in this repo."
+  short_description: "Report what new Codex releases change here; apply on request."
   default_prompt: "Use $codex-operations:codex-changelog to report what Codex releases since the last read change in this repository."
 policy:
   allow_implicit_invocation: true

@@ -20,11 +20,13 @@ Input: DIR/rows.json and DIR/releases.json, where DIR is a directory written by
     "record": "<PR, issue, or reopen condition>"}]
 `size` defaults to fits and `state` to pending. A final state (applied,
 declined, deferred, filed) needs a record. `applied` means merged. No field may
-hold a control character; `surface` and `record` may not hold `|` or a
-backtick. A ledger that is a symlink is refused.
+hold a control, format (bidi or zero-width), or separator character; `surface`
+and `record` may not hold `|` or a backtick.
 
-Owner: the nearest directory at or above the surface, inside --root (default:
-git toplevel or working directory), holding a plugin manifest; `.` when none.
+Root: --root, default git toplevel or working directory. The ledger must sit
+inside it with no symlink or `..` on the way.
+Owner: the nearest directory at or above the surface, inside the root, holding
+a plugin manifest; `.` when none.
 
 Selection (--select, comma-separated): `all`, a lens (`correct`, `replace`,
 `adopt`), a row number `N`, or a range `N-M`.
@@ -41,6 +43,7 @@ import datetime
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path, PurePosixPath
 
 # The sibling imports below would otherwise leave __pycache__ in the skill directory.
@@ -66,7 +69,13 @@ FINAL_STATES = ("applied", "declined", "deferred", "filed")
 STATES = ("pending", *FINAL_STATES)
 ITEM_RE = re.compile(r"^(\d+\.\d+\.\d+)-\d{3}$")
 TOKEN_RE = re.compile(r"^(\d+)(?:-(\d+))?$")
-UNSAFE_RE = re.compile(r"[\x00-\x1f\x7f]")
+# Control (Cc), format (Cf: bidi overrides, zero-width), and line and paragraph
+# separators could forge an output line or make reviewed text differ from its bytes.
+UNSAFE_CATEGORIES = {"Cc", "Cf", "Zl", "Zp"}
+
+
+def unsafe(value: str) -> bool:
+    return any(unicodedata.category(char) in UNSAFE_CATEGORIES for char in value)
 
 
 def load(directory: Path) -> tuple[list[dict], dict]:
@@ -115,8 +124,8 @@ def check_row(number: int, row: object, published: dict) -> dict:
     # Output lines and ledger table rows are built from these fields, so a field
     # must not be able to start a new line or a new table cell.
     for name, value in (("surface", surface), ("sentence", sentence), ("record", record)):
-        if UNSAFE_RE.search(value) or (name != "sentence" and ("|" in value or "`" in value)):
-            raise fail(f"{name} holds a control character, `|`, or a backtick")
+        if unsafe(value) or (name != "sentence" and ("|" in value or "`" in value)):
+            raise fail(f"{name} holds a control character, an invisible format character, `|`, or a backtick")
     if state in FINAL_STATES and not record:
         raise fail(f"state {state} needs a record (PR, issue, or reopen condition)")
     items = row.get("items")
@@ -203,6 +212,10 @@ def plan(rows: list[dict], published: dict, spec: str, root: Path) -> None:
 def marker(rows: list[dict], published: dict, after: Version | None, ledger: Path, write: bool) -> None:
     current = read_marker(ledger)
     print(f"last-read: {show(current) if current else 'none'}")
+    for row in rows:
+        if row["state"] in FINAL_STATES:
+            print(f"ledger-row: | {', '.join(row['items'])} | `{row['surface']}` | {row['lens']} | "
+                  f"{row['state']} | {row['record']} |")
     # releases.json lists every stable release between its ends, so the range
     # leaves no unread release only when it reaches back to the marker: it
     # starts at or below it, or it is the default range fetched after it.
@@ -221,10 +234,6 @@ def marker(rows: list[dict], published: dict, after: Version | None, ledger: Pat
         target = below[-1] if below else None
     else:
         target = releases[-1]
-    for row in rows:
-        if row["state"] in FINAL_STATES:
-            print(f"ledger-row: | {', '.join(row['items'])} | `{row['surface']}` | {row['lens']} | "
-                  f"{row['state']} | {row['record']} |")
     if target is None or (current is not None and target <= current):
         print("marker: unchanged")
         return
@@ -234,6 +243,21 @@ def marker(rows: list[dict], published: dict, after: Version | None, ledger: Pat
     if write:
         write_marker(ledger, line)
         print(f"written: {ledger}")
+
+
+def check_ledger(ledger: Path, root: Path) -> None:
+    """The ledger must be a regular file, or absent, inside root with no symlink on the way."""
+    try:
+        relative = ledger.absolute().relative_to(root.absolute())
+    except ValueError:
+        raise UsageError(f"ledger is outside the repository root {root}: {ledger}") from None
+    current = root.absolute()
+    for part in relative.parts:
+        current = current / part
+        if part == ".." or current.is_symlink():
+            raise UsageError(f"ledger path passes through a symlink or `..`: {ledger}")
+    if ledger.exists() and not ledger.is_file():
+        raise UsageError(f"ledger is not a regular file: {ledger}")
 
 
 def write_marker(ledger: Path, line: str) -> None:
@@ -262,7 +286,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--from", dest="source_dir", type=Path, required=True,
                         help="directory holding rows.json and releases.json")
     parser.add_argument("--select", help="plan only: which rows are in scope")
-    parser.add_argument("--root", type=Path, help="plan only: repository root for owner lookup")
+    parser.add_argument("--root", type=Path, help="repository root: owner lookup, and the ledger must sit inside it")
     parser.add_argument("--ledger", type=Path, help="marker only: ledger holding the read marker")
     parser.add_argument("--write", action="store_true", help="marker only: write the new marker line")
     args = parser.parse_args(argv)
@@ -271,15 +295,15 @@ def main(argv: list[str]) -> int:
             raise UsageError("plan needs --select")
         if args.command == "plan" and (args.ledger or args.write):
             raise UsageError("--ledger and --write apply to marker only")
-        if args.command == "marker" and (args.select or args.root):
-            raise UsageError("--select and --root apply to plan only")
+        if args.command == "marker" and args.select:
+            raise UsageError("--select applies to plan only")
         rows, published = load(args.source_dir)
+        root = args.root or repo_root()
         if args.command == "plan":
-            plan(rows, published, args.select, args.root or repo_root())
+            plan(rows, published, args.select, root)
         else:
-            ledger = args.ledger or repo_root() / DEFAULT_LEDGER
-            if ledger.is_symlink() or (ledger.exists() and not ledger.is_file()):
-                raise UsageError(f"ledger is not a regular file: {ledger}")
+            ledger = args.ledger or root / DEFAULT_LEDGER
+            check_ledger(ledger, root)
             marker(rows, published, saved_after(args.source_dir), ledger, args.write)
     except (UsageError, OSError, UnicodeDecodeError, ValueError) as error:
         print(f"ERROR: {error}", file=sys.stderr)

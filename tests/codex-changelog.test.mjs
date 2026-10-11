@@ -405,7 +405,12 @@ function allLines(stdout) {
   return lines;
 }
 
-const apply = (args) => run(applyScript, args);
+/** Runs apply_plan; a marker run with no --root takes the ledger's directory as the root. */
+const apply = (args) => {
+  const ledger = args[args.indexOf("--ledger") + 1];
+  const root = args[0] === "marker" && !args.includes("--root") ? ["--root", path.dirname(ledger)] : [];
+  return run(applyScript, [...args, ...root]);
+};
 
 test("apply plan groups open in-scope rows by owner plugin and files the rest", { skip }, async (t) => {
   const root = await tempDir(t, "codex-changelog-owners-");
@@ -515,11 +520,13 @@ const invalidRows = [
     rows: [row("a.md", "adopt", ["0.2.0-001"], { state: "filed", record: null })],
     stderr: /record must be a string/u,
   },
+  { name: "a bidi override in a record", rows: [row("a.md", "adopt", ["0.2.0-001"], { state: "filed", record: "issue ‮1" })], stderr: /control character/u },
+  { name: "a zero-width space in a sentence", rows: [row("a.md", "adopt", ["0.2.0-001"], { sentence: "claim​" })], stderr: /control character/u },
   { name: "a newline in a surface", rows: [row("a.md\ngroup: evil rows 1", "correct", ["0.2.0-001"])], stderr: /control character/u },
   {
     name: "a table cell break in a record",
     rows: [row("a.md", "correct", ["0.2.0-001"], { state: "declined", record: "x | y" })],
-    stderr: /control character, `\|`, or a backtick/u,
+    stderr: /control character, an invisible format character, `\|`, or a backtick/u,
   },
 ];
 
@@ -530,6 +537,7 @@ test("the marker does not move past releases a later range skipped", { skip }, a
   const lines = allLines(apply(["marker", "--from", explicit, "--ledger", ledger, "--write"]).stdout);
   assert.match(lines.gap[0], /^the range starts at 0\.2\.0, and releases after 0\.1\.0 may be unread/u);
   assert.deepEqual(lines.marker, ["unchanged"]);
+  assert.equal(lines["ledger-row"].length, 1, "final rows are still recorded when the marker cannot move");
   assert.match(await readFile(ledger, "utf8"), /`0\.1\.0`/u);
 
   const staleDefault = await writeApplyInput(t, final, "0.0.9");
@@ -587,15 +595,29 @@ test("apply_plan rejects a malformed releases.json with exit 3", { skip }, async
   }
 });
 
-test("apply_plan refuses a symlinked ledger", { skip: posixOnly }, async (t) => {
+test("apply_plan refuses a symlinked ledger or one under a symlinked directory", { skip: posixOnly }, async (t) => {
   const input = await writeApplyInput(t, [row("a.md", "correct", ["0.2.0-001"], { state: "declined", record: "later" })]);
   const target = await writeLedger(t, "0.1.0");
   const link = path.join(input, "ledger.md");
   await symlink(target, link);
-  const result = apply(["marker", "--from", input, "--ledger", link, "--write"]);
-  assert.equal(result.status, 3, result.stdout);
-  assert.match(result.stderr, /not a regular file/u);
+  const viaFile = apply(["marker", "--from", input, "--ledger", link, "--write"]);
+  assert.equal(viaFile.status, 3, viaFile.stdout);
+  assert.match(viaFile.stderr, /passes through a symlink/u);
+
+  await symlink(path.dirname(target), path.join(input, "docs"));
+  const viaDir = apply(["marker", "--from", input, "--root", input, "--ledger", path.join(input, "docs", "codex-cli.md"), "--write"]);
+  assert.equal(viaDir.status, 3, viaDir.stdout);
+  assert.match(viaDir.stderr, /passes through a symlink/u);
   assert.match(await readFile(target, "utf8"), /`0\.1\.0`/u);
+});
+
+test("apply_plan refuses a ledger outside the repository root", { skip }, async (t) => {
+  const input = await writeApplyInput(t, [row("a.md", "correct", ["0.2.0-001"], { state: "declined", record: "later" })]);
+  const outside = await writeLedger(t, "0.1.0");
+  const result = apply(["marker", "--from", input, "--root", input, "--ledger", outside, "--write"]);
+  assert.equal(result.status, 3, result.stdout);
+  assert.match(result.stderr, /outside the repository root/u);
+  assert.match(await readFile(outside, "utf8"), /`0\.1\.0`/u);
 });
 
 for (const testCase of invalidRows) {
