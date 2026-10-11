@@ -1,0 +1,15 @@
+# Repo-local link-check exceptions. Each entry is an exact URL verified alive
+# and failing only because the publisher refuses automated clients. Shared
+# excludes live in lychee.toml (synced from melodic-software/standards).
+
+# Science and PNAS answer 403 to lychee, curl and a browser User-Agent alike
+# (Cloudflare). Both DOIs resolve through the doi.org handle API and Crossref
+# indexes both works (verified 2026-10-11); a DOI is the stable citation form.
+^https://doi\.org/10\.1126/sciadv\.adt3813$
+^https://doi\.org/10\.1073/pnas\.2422455122$
+
+# cdc.gov answers 403 "Access Denied" (Akamai) to lychee, curl and a browser
+# User-Agent from this workstation, while a WebFetch from another network
+# returned both pages with their content (verified 2026-10-11).
+^https://www\.cdc\.gov/ccindex/tool/index\.html$
+^https://www\.cdc\.gov/nceh/clearwriting/mod2/index\.html$
