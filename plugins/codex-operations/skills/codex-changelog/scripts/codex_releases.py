@@ -7,6 +7,7 @@ Subcommands:
           release in range, each led by a stable id (<version>-<ordinal>).
           With --out DIR, also writes DIR/releases.json, DIR/notes/<v>.md
           (raw bodies) and DIR/items/<v>.md, which --from DIR reads offline.
+          A default range also writes DIR/after.txt, the marker it started after.
 
 Releases come from GitHub (`gh release list|view -R openai/codex`), stable
 `rust-v<X.Y.Z>` tags only, or from a directory written by an earlier
@@ -274,7 +275,16 @@ def report(args: argparse.Namespace, bounds: tuple[Version, Version] | None,
 
     if args.command == "fetch":
         write_or_print(args.out, in_range, published, bodies, items)
+        if args.out and not bounds and marker and (not args.source_dir or saved_after(args.source_dir) == marker):
+            # The default range runs from the release right after the marker, so
+            # `apply_plan.py marker` can tell it leaves no release unread.
+            (args.out / "after.txt").write_text(show(marker) + "\n", encoding="utf-8")
     return 0
+
+
+def saved_after(directory: Path) -> Version | None:
+    path = directory / "after.txt"
+    return parse_version(path.read_text(encoding="utf-8")) if path.is_file() else None
 
 
 def exceeded(emit, args: argparse.Namespace, ledger: Path, last: Version) -> None:

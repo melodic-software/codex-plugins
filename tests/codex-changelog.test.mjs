@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -380,7 +380,7 @@ test("discover_surfaces rejects a missing root and unknown arguments", { skip },
 const applyScript = path.join(scripts, "apply_plan.py");
 
 /** A `fetch --out` style directory with three releases and the given rows. */
-async function writeApplyInput(t, rows) {
+async function writeApplyInput(t, rows, after) {
   const dir = await tempDir(t, "codex-changelog-apply-");
   const releases = [
     { tagName: "rust-v0.2.0", publishedAt: "2026-10-01T00:00:00Z" },
@@ -389,6 +389,7 @@ async function writeApplyInput(t, rows) {
   ];
   await writeFile(path.join(dir, "releases.json"), JSON.stringify(releases), "utf8");
   await writeFile(path.join(dir, "rows.json"), JSON.stringify(rows), "utf8");
+  if (after) await writeFile(path.join(dir, "after.txt"), `${after}\n`, "utf8");
   return dir;
 }
 
@@ -455,7 +456,7 @@ test("the marker moves to the newest release once every row is final", { skip },
     row("a.md", "correct", ["0.2.0-001"], { state: "applied", record: "https://example.invalid/pull/1" }),
     row("b.md", "replace", ["0.3.0-001"], { state: "filed", record: "issue 9" }),
     row("c.md", "adopt", ["0.2.1-001"], { state: "deferred", record: "reopen when the docs state it" }),
-  ]);
+  ], "0.1.0");
   const dry = allLines(apply(["marker", "--from", input, "--ledger", ledger]).stdout);
   assert.deepEqual(dry.marker, ["0.3.0"]);
   assert.equal(dry["ledger-row"].length, 3);
@@ -475,7 +476,7 @@ test("an open row holds the marker below its earliest release", { skip }, async 
   const held = await writeApplyInput(t, [
     row("a.md", "correct", ["0.2.0-001"], { state: "applied", record: "pull 1" }),
     row("b.md", "adopt", ["0.3.0-001", "0.2.1-002"], { state: "pending" }),
-  ]);
+  ], "0.1.0");
   const lines = allLines(apply(["marker", "--from", held, "--ledger", ledger, "--write"]).stdout);
   assert.deepEqual(lines["held-by"], ["row 2 (pending) at 0.2.1"]);
   assert.deepEqual(lines.marker, ["0.2.0"]);
@@ -508,7 +509,94 @@ const invalidRows = [
   { name: "the note lens", rows: [row("a.md", "note", ["0.2.0-001"])], stderr: /lens must be/u },
   { name: "a malformed item id", rows: [row("a.md", "adopt", ["0.2.0-1"])], stderr: /not an item id/u },
   { name: "an empty row list", rows: [], stderr: /non-empty list/u },
+  { name: "a null sentence", rows: [row("a.md", "adopt", ["0.2.0-001"], { sentence: null })], stderr: /sentence must be a string/u },
+  {
+    name: "a null record on a final row",
+    rows: [row("a.md", "adopt", ["0.2.0-001"], { state: "filed", record: null })],
+    stderr: /record must be a string/u,
+  },
+  { name: "a newline in a surface", rows: [row("a.md\ngroup: evil rows 1", "correct", ["0.2.0-001"])], stderr: /control character/u },
+  {
+    name: "a table cell break in a record",
+    rows: [row("a.md", "correct", ["0.2.0-001"], { state: "declined", record: "x | y" })],
+    stderr: /control character, `\|`, or a backtick/u,
+  },
 ];
+
+test("the marker does not move past releases a later range skipped", { skip }, async (t) => {
+  const ledger = await writeLedger(t, "0.1.0");
+  const final = [row("a.md", "correct", ["0.2.1-001"], { state: "declined", record: "reopen later" })];
+  const explicit = await writeApplyInput(t, final);
+  const lines = allLines(apply(["marker", "--from", explicit, "--ledger", ledger, "--write"]).stdout);
+  assert.match(lines.gap[0], /^the range starts at 0\.2\.0, and releases after 0\.1\.0 may be unread/u);
+  assert.deepEqual(lines.marker, ["unchanged"]);
+  assert.match(await readFile(ledger, "utf8"), /`0\.1\.0`/u);
+
+  const staleDefault = await writeApplyInput(t, final, "0.0.9");
+  assert.deepEqual(allLines(apply(["marker", "--from", staleDefault, "--ledger", ledger]).stdout).marker, ["unchanged"]);
+});
+
+test("fetch records the marker a default range started after, and only then", { skip }, async (t) => {
+  const source = await writeSource(t);
+  const ledger = await writeLedger(t, "0.1.0");
+  // A replay of a directory that recorded no start cannot vouch for one.
+  const unvouched = await tempDir(t, "codex-changelog-after-replay-");
+  assert.equal(run(releasesScript, ["fetch", "--from", source, "--ledger", ledger, "--out", unvouched]).status, 0);
+  await assert.rejects(readFile(path.join(unvouched, "after.txt"), "utf8"));
+
+  // A directory a default-range fetch wrote carries its start into a replay.
+  await writeFile(path.join(source, "after.txt"), "0.1.0\n", "utf8");
+  const byDefault = await tempDir(t, "codex-changelog-after-");
+  run(releasesScript, ["fetch", "--from", source, "--ledger", ledger, "--out", byDefault]);
+  assert.equal(await readFile(path.join(byDefault, "after.txt"), "utf8"), "0.1.0\n");
+
+  const explicit = await tempDir(t, "codex-changelog-after-range-");
+  run(releasesScript, ["fetch", "--from", source, "--ledger", ledger, "--range", "0.2.0..0.3.0", "--out", explicit]);
+  await assert.rejects(readFile(path.join(explicit, "after.txt"), "utf8"));
+});
+
+test("a plugin manifest surface belongs to its plugin, and plan prints each sentence", { skip }, async (t) => {
+  const root = await tempDir(t, "codex-changelog-manifest-");
+  await writeTree(root, ["plugins/one/.codex-plugin/plugin.json"]);
+  const input = await writeApplyInput(t, [
+    row("plugins/one/.codex-plugin/plugin.json", "correct", ["0.2.0-001"]),
+    row("plugins/one/skills/a/SKILL.md", "correct", ["0.2.0-002"], { sentence: "states X | release says Y" }),
+  ]);
+  const lines = allLines(apply(["plan", "--from", input, "--root", root, "--select", "all"]).stdout);
+  assert.deepEqual(lines.group, ["plugins/one rows 1,2"]);
+  assert.match(lines["row 2"][0], / sentence=states X \| release says Y$/u);
+});
+
+test("the marker write keeps CRLF line endings", { skip }, async (t) => {
+  const dir = await tempDir(t, "codex-changelog-crlf-");
+  const ledger = path.join(dir, "codex-cli.md");
+  await writeFile(ledger, "# Ledger\r\n\r\n**Last read Codex release:** `0.1.0` (published x), read on y.\r\n\r\nTail.\r\n", "utf8");
+  const input = await writeApplyInput(t, [row("a.md", "correct", ["0.2.0-001"], { state: "filed", record: "issue 1" })], "0.1.0");
+  assert.equal(apply(["marker", "--from", input, "--ledger", ledger, "--write"]).status, 0);
+  const text = await readFile(ledger, "utf8");
+  assert.match(text, /^# Ledger\r\n\r\n\*\*Last read Codex release:\*\* `0\.3\.0` .*\r\n\r\nTail\.\r\n$/u);
+});
+
+test("apply_plan rejects a malformed releases.json with exit 3", { skip }, async (t) => {
+  const input = await writeApplyInput(t, [row("a.md", "correct", ["0.2.0-001"])]);
+  for (const body of ['{"tagName": "rust-v0.2.0"}', '["rust-v0.2.0"]']) {
+    await writeFile(path.join(input, "releases.json"), body, "utf8");
+    const result = apply(["marker", "--from", input, "--ledger", path.join(input, "ledger.md")]);
+    assert.equal(result.status, 3, result.stdout);
+    assert.match(result.stderr, /list of objects/u);
+  }
+});
+
+test("apply_plan refuses a symlinked ledger", { skip: posixOnly }, async (t) => {
+  const input = await writeApplyInput(t, [row("a.md", "correct", ["0.2.0-001"], { state: "declined", record: "later" })]);
+  const target = await writeLedger(t, "0.1.0");
+  const link = path.join(input, "ledger.md");
+  await symlink(target, link);
+  const result = apply(["marker", "--from", input, "--ledger", link, "--write"]);
+  assert.equal(result.status, 3, result.stdout);
+  assert.match(result.stderr, /not a regular file/u);
+  assert.match(await readFile(target, "utf8"), /`0\.1\.0`/u);
+});
 
 for (const testCase of invalidRows) {
   test(`apply_plan rejects ${testCase.name} with exit 3`, { skip }, async (t) => {

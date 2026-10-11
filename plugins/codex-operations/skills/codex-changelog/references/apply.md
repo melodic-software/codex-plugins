@@ -57,8 +57,10 @@ declines it; then set `declined` with the reopen condition the user gives.
   the repository's `AGENTS.md` chain and conventions for branches, commits,
   versions, changelogs, and pull requests, and follow them. Make the edits, run
   the repository's own validation, and commit only the paths the rows name.
-  Push and open the pull request with the user's own `git` and `gh`; those are
-  network writes, so they run under the user's Codex approval settings. When
+  List the branches with their commits, and push and open the pull requests
+  with the user's own `git` and `gh` only after the user confirms that batch;
+  those are network writes, so they also run under the user's Codex approval
+  settings. When
   `gh` is missing or unauthenticated, or the user declines, stop at the local
   branch and report it. Set a row `applied`, with the PR URL, only after its
   pull request merges; until then it stays `pending`.
@@ -85,7 +87,11 @@ The ledger (default `docs/upstream/codex-cli.md`) holds the marker line and a
 in a final state; add the ones not yet in the table. It then prints how far
 the marker may move: to the newest release in range when every row is final,
 otherwise to the release just below the earliest release any open row cites
-(`held-by:`), or `unchanged` when that is not past the current marker. With
+(`held-by:`), or `unchanged` when that is not past the current marker. A
+range that starts after the marker without being the default range from it
+(an explicit `--range`) could skip unread releases, so the script prints
+`gap:` and leaves the marker; `fetch` records the default range's start in
+`after.txt` for this check. With
 `--write` it sets the marker line and leaves the rest of the ledger as it was.
 Never edit the marker by hand past what the script prints.
 

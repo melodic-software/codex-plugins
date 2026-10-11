@@ -148,7 +148,8 @@ hand-off, and the ledger table are in [references/apply.md](references/apply.md)
    in that owner, following the repository's own conventions and validation.
    For the `file:` line (large rows and every `replace` row, which is never
    edited), draft one issue per row and create them only after the user
-   confirms the batch. Pushes, pull requests, and issues go through the
+   confirms the batch. Push and open the pull requests the same way, after the
+   user confirms that batch. Pushes, pull requests, and issues go through the
    user's own `git` and `gh` under the user's Codex approvals; without `gh`,
    or when the user declines, stop at local branches and report.
 4. **Ledger and marker.** Record final rows in the ledger's `## Decisions`
