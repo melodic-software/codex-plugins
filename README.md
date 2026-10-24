@@ -84,8 +84,6 @@ docs/plugin-philosophy.md
 docs/migration-playbook.md
 docs/official-docs.md
 docs/codex-capability-cheat-sheet.md
-lefthook.yml
-.githooks/guardrails/
 ```
 
 ## Contributing
