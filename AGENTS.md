@@ -149,7 +149,7 @@ Org architecture (cross-repo decisions, glossary, why each trust link exists): p
 
 Each line names a rule CI does not enforce; the linked file states it in full.
 
-- Org-wide criteria: [`REVIEW.md`](https://github.com/melodic-software/standards/blob/main/REVIEW.md) in `melodic-software/standards`.
+- Org-wide criteria: [`REVIEW.md`](REVIEW.md), synced from `melodic-software/standards`.
 - Live documentation preflight, with the consulted URLs and verification date
   recorded in the pull request: [preflight](#mandatory-documentation-preflight).
 - Repository prose links upstream Codex documentation and never copies its
