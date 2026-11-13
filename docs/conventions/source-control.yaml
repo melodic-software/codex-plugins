@@ -4,7 +4,7 @@
 # Keys not listed here fall through to that resolution order.
 #
 # pr_body_required_sections must stay in step with the section names the `pr-contract` composite
-# reads. It runs as a step inside `ci-status`, the single required check. A body missing `## Fix` or
+# reads. It runs as a step inside `CI Status`, the single required check. A body missing `## Fix` or
 # `## Verification` by name does not turn that check red; the composite reports it with an advisory
 # comment and the `needs-issue-linkage` label. Listing a differently-named equivalent here sends an
 # author straight into that advisory noise.
