@@ -1,0 +1,23 @@
+# Repository-wide text checks in this repository. Contract and schema:
+# https://github.com/melodic-software/claude-code-plugins/tree/main/docs/contracts/ecosystem-commands
+# Lint-only: /toolchain:lint runs it, /toolchain:check does not. The one check
+# is CI's lychee job (.github/workflows/pr-require-checks.yml:93-106), the
+# lychee-offline composite pinned at melodic-software/ci-workflows@594987a
+# (v0.39.8) with this repository's lychee.toml (:104-106). The command is the
+# composite's arguments (lychee-offline/action.yml:62) with its default glob
+# (:8), which it passes to lychee unexpanded (:72-74). Commands run from the
+# repository root.
+enabled: true
+globs: ["**"]
+project-discovery: []
+build-cmd: null
+test-cmd: null
+check-cmd: "lychee --offline --no-progress --config lychee.toml '**/*.md'"
+fix-cmd: null
+code-fix-cmd: null
+opt-in: "lychee.toml at the repository root"
+install-hint: "lychee 0.24.2: winget install lycheeverse.lychee | brew install lychee; CI verifies the x86_64-unknown-linux-gnu release archive by SHA-256 1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+tool-pin:
+  lychee: "0.24.2"
+gates: []
+notes: "Lint-only: owned by /toolchain:lint. Pins at ci-workflows@594987a: lychee-offline/action.yml:19 (version), :24 (checksum), :40 (asset). CI passes no globs or exclude input (pr-require-checks.yml:105-106), so the defaults '**/*.md' and no --exclude-path apply (action.yml:8, :16). The glob is single-quoted so lychee expands it, as in CI; an unquoted ** in a shell without globstar matches one directory level only. check-cmd checks every markdown file, not <files>: an anchor check spans files, so a changed heading breaks links in files the change does not touch. A local run reads the working tree: lychee.toml sets hidden = true and a glob input does not honor .gitignore, so ignored dot-directories other than the excluded .work/ and .claude/worktrees/ are read too (lychee.toml:11-16, :47-58), which CI's clean checkout does not have. No typos, gitleaks or editorconfig-checker command: _typos.toml, .gitleaks.toml, .editorconfig and .editorconfig-checker.json are standards-synced files (pr-check-managed-files-hosted.yml:41-42, :67, :76), and no CI job here runs those tools; lefthook.yml:1-6 pulls git hooks from claude-code-plugins, and these records follow CI, not a local hook. Checks with no local form: the pull-request contract check (pr-require-checks.yml:130-133, check-contract@594987a v0.39.8) and the result aggregation (:134-153, aggregate-results@ac4d878) in the ci-status job (:108); they need the pull request. This ci-status job has no draft refusal. Not run locally: the model review lanes pr-review (.github/workflows/pr-review-hosted.yml:74-85) and pr-review-security (.github/workflows/pr-review-security-hosted.yml:67-78), which review the pull request through ci-workflows reusables called at @main, not pinned; both are advisory and skip drafts (pr-review-hosted.yml:37-38, :78; pr-review-security-hosted.yml:44-46, :71). Not run locally: check-managed-files (pr-check-managed-files-hosted.yml:106-127, check-managed-files@8e1076f v0.71.0), which needs a melodic-software/standards checkout and the pull request; it is advisory and not aggregated into ci-status (:20-22). pr-automerge-dependabot (.github/workflows/pr-automerge-dependabot.yml:22-28) checks nothing; it arms auto-merge on a Dependabot pull request (:3-7)."
