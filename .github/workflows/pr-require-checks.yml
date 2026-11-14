@@ -72,7 +72,7 @@ concurrency:
 
 jobs:
   validate-marketplace:
-    name: Marketplace contracts
+    name: Validate Marketplace
     if: ${{ !(github.event.pull_request.head.repo.full_name == github.repository && (contains(fromJSON('["labeled","unlabeled"]'), github.event.action) || (github.event.action == 'edited' && !github.event.changes.base))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -91,7 +91,7 @@ jobs:
         run: npm run validate
 
   lychee:
-    name: Offline links
+    name: Lychee
     if: ${{ !(github.event.pull_request.head.repo.full_name == github.repository && (contains(fromJSON('["labeled","unlabeled"]'), github.event.action) || (github.event.action == 'edited' && !github.event.changes.base))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
