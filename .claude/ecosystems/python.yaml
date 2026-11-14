@@ -1,0 +1,18 @@
+# Python in this repository: four skill scripts under
+# plugins/codex-operations/skills/, with no pyproject.toml. Contract and schema:
+# https://github.com/melodic-software/claude-code-plugins/tree/main/docs/contracts/ecosystem-commands
+# CI builds and lints no Python: .github/workflows/pr-require-checks.yml has no
+# Python step (:73-153). Its node tests run the scripts (typescript.yaml). So
+# this record runs no command.
+enabled: true
+globs: ["*.py"]
+project-discovery: []
+build-cmd: null
+test-cmd: null
+check-cmd: null
+fix-cmd: null
+code-fix-cmd: null
+install-hint: "None: this record runs no command."
+tool-pin: {}
+gates: []
+notes: "No command because CI has none for Python. Without this file the bundled python default (claude-code-plugins plugins/toolchain/reference/ecosystems/python.yaml:13-14) would run uv run pytest -x -q and uv run ruff check . --no-fix && uv run ruff format . --check && uv run pyright.The scripts are tested through node: tests/codex-changelog.test.mjs and tests/codex-operations.test.mjs spawn them (tests/codex-changelog.test.mjs:22-26, tests/codex-operations.test.mjs:21-30), and that suite is typescript.yaml's test-cmd, kept there so one change does not run it twice. A change to only a *.py file therefore runs no test locally, while CI runs the node tests on every full event (pr-require-checks.yml:76, :88-89). The record is enabled: true with null commands rather than enabled: false: null commands read as not applicable and stop the bundled Python default, while false would also drop the Python lane for code-metrics, which reads enabled (the ecosystem-commands contract README, Consumers). No opt-in key: there is no check-cmd for it to govern."
