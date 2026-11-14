@@ -68,8 +68,8 @@ Codex CLI 0.159.0 removed the bundled `plugin-creator` skill
 ([#48604](https://github.com/openai/codex/pull/48604)), so `$plugin-creator`
 no longer resolves from the CLI binary. The
 [plugin packaging guide](https://developers.openai.com/plugins/build/plugins)
-still names `@plugin-creator` as a built-in in ChatGPT; check that page before
-relying on it.
+still offers `@plugin-creator` in ChatGPT Work mode and `$plugin-creator` on
+other Codex surfaces; check that page before relying on either.
 
 ## Plugin-author changes since 0.143.0
 

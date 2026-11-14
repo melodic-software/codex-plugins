@@ -21,7 +21,8 @@ installs, or publishes a plugin component:
 5. Record the consulted URLs and verification date in the pull request. Link to
    upstream material; do not copy its prose or examples into this repository.
 
-Read only the sections relevant to the action, but do not skip the preflight.
+Within the live upstream pages, read only the sections relevant to the action,
+but do not skip the preflight.
 When live official documentation and verified product behavior disagree, stop
 contract-changing work, record the discrepancy, and prefer the narrower
 behavior until it is resolved. Update `docs/official-docs.md` when a pointer
@@ -82,10 +83,9 @@ paths, tool installation, subscription, or credentials as a consumer default.
 
 - Scaffold or update plugins by hand from the
   [plugin packaging guide](https://developers.openai.com/plugins/build/plugins),
-  and skills with `$skill-creator`. Codex CLI 0.159.0 removed `$plugin-creator`;
-  the guide still offers `@plugin-creator` in ChatGPT Work mode and
-  `$plugin-creator` on other Codex surfaces, so check the page before relying
-  on either.
+  and skills with `$skill-creator`. The Codex CLI ships no `$plugin-creator`;
+  the [cheat sheet](docs/codex-capability-cheat-sheet.md#built-in-system-skills)
+  records the version and what the guide offers on other surfaces.
 - Keep every skill focused on one recognizable goal. Put essential procedure in
   `SKILL.md` and detailed variants in directly linked `references/` files.
 - Keep `agents/openai.yaml` aligned with its skill. It is the harness-facing
@@ -114,11 +114,13 @@ npm test
 npm run validate
 ```
 
-`npm run validate` is the plugin and catalog validator; Codex CLI 0.159.0
-removed the built-in one. Also run the `$skill-creator` quick validator for every
-changed skill, and behavioral tests for direct, indirect, negative, missing
-dependency, and repository-context cases. Migration validation must use a new
-Codex task with the source marketplace and sibling plugins disabled.
+`npm run validate` is the plugin and catalog validator; the Codex CLI ships
+none. Also run the `$skill-creator` quick validator for every changed skill,
+and behavioral tests for every case the
+[release gates](docs/plugin-philosophy.md#release-gates) name. Migration
+validation must use a new Codex task with the source marketplace and sibling
+plugins disabled, and exercises the
+[playbook matrix](docs/migration-playbook.md#8-validate-the-target-in-isolation).
 
 The pull request must state:
 

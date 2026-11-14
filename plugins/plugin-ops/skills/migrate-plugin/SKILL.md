@@ -12,10 +12,10 @@ assumptions.
 
 1. Record the source repository, exact commit, version, and target base commit.
    Read every source component and its tests before editing.
-2. Fetch current official documentation for both the source host and Codex. In
-   this marketplace, complete the root `AGENTS.md` preflight and read
-   `docs/plugin-philosophy.md` plus `docs/migration-playbook.md`. Record live
-   URLs and the date checked; copy no upstream prose.
+2. Fetch current official documentation for both the source host and Codex.
+   When the active repository has them, complete the root `AGENTS.md` preflight
+   and read `docs/plugin-philosophy.md` plus `docs/migration-playbook.md`.
+   Record live URLs and the date checked; copy no upstream prose.
 3. Define the user-goal vertical slice: inputs, repository context, output,
    side effects, boundaries, platform variants, and acceptance evidence.
 4. Read [references/component-map.md](references/component-map.md), then create
