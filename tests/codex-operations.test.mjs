@@ -203,7 +203,7 @@ const rawJwtToken = [
   base64Url('{"sub":"codex-plugins"}'),
   base64Url("not-a-real-signature"),
 ].join(".");
-const rawGithubToken = "ghp_0123456789abcdefghijABCDEFGHIJ";
+const rawGithubToken = "ghp_0123456789abcdefghijABCDEFGHIJ"; // gitleaks:allow
 
 const collectorCases = [
   {
