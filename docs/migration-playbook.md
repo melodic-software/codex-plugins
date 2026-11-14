@@ -121,9 +121,9 @@ to preserve the source file shape.
 
 Write the target package's manifest and marketplace entry by hand from the
 [plugin packaging guide](https://developers.openai.com/plugins/build/plugins);
-Codex CLI 0.159.0 removed the bundled `$plugin-creator` skill. The guide still
-offers `@plugin-creator` in ChatGPT Work mode and `$plugin-creator` on other
-Codex surfaces; check the page before relying on either. Use `$skill-creator` for each
+the Codex CLI ships no `$plugin-creator` skill (see the
+[cheat sheet](codex-capability-cheat-sheet.md#built-in-system-skills)).
+Use `$skill-creator` for each
 skill; it is a built-in system skill, so it takes the bare `$name` form. Use
 the installed `$plugin-ops:migrate-plugin` component map as a checklist, then
 override it when current official documentation differs. Skills that ship inside
@@ -160,8 +160,8 @@ write to a broader scope, or change the user goal.
 
 ## 8. Validate the target in isolation
 
-Run the repository validator (`validate-marketplace.mjs`, which replaces the
-built-in plugin validator Codex CLI 0.159.0 removed) and the `$skill-creator`
+Run the repository validator (`validate-marketplace.mjs`; the Codex CLI ships
+no plugin validator) and the `$skill-creator`
 quick validator. Then install the target from a local marketplace and start a new
 Codex task with the source marketplace and sibling plugins disabled.
 
